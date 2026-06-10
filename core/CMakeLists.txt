@@ -8,6 +8,7 @@ target_compile_features(rpgkit_core INTERFACE cxx_std_20)
 
 if(RPGKIT_BUILD_TESTS)
   add_executable(rpgkit_core_tests
+    tests/bus_test.cpp
     tests/status_test.cpp
     tests/version_test.cpp
   )
