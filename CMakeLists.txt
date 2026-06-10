@@ -8,6 +8,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(RPGKIT_BUILD_TESTS "Build rpgkit tests" ${PROJECT_IS_TOP_LEVEL})
 
+# Strict warnings for rpgkit's own targets (tests and, later, examples).
+# Linked PRIVATE per target rather than set globally, so dependencies built in
+# this tree (googletest via FetchContent) and consumers vendoring rpgkit are
+# never subjected to our -Werror.
+add_library(rpgkit_warnings INTERFACE)
+if(MSVC)
+  target_compile_options(rpgkit_warnings INTERFACE /W4 /WX)
+else()
+  target_compile_options(rpgkit_warnings INTERFACE -Wall -Wextra -Werror)
+endif()
+
 if(RPGKIT_BUILD_TESTS)
   include(FetchContent)
   FetchContent_Declare(

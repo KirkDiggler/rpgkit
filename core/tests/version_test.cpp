@@ -6,7 +6,8 @@
 namespace rpg::core {
 namespace {
 
-TEST(VersionTest, MatchesProjectVersion) { EXPECT_EQ(kVersion, "0.1.0"); }
+// RPGKIT_PROJECT_VERSION is injected by core/CMakeLists.txt from the CMake project() version.
+TEST(VersionTest, MatchesProjectVersion) { EXPECT_EQ(kVersion, RPGKIT_PROJECT_VERSION); }
 
 }  // namespace
 }  // namespace rpg::core

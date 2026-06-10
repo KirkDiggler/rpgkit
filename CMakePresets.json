@@ -13,7 +13,6 @@
       "binaryDir": "${sourceDir}/build/debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_FLAGS": "-Wall -Wextra -Werror",
         "RPGKIT_BUILD_TESTS": "ON"
       }
     },
