@@ -7,7 +7,10 @@ target_include_directories(rpgkit_core INTERFACE
 target_compile_features(rpgkit_core INTERFACE cxx_std_20)
 
 if(RPGKIT_BUILD_TESTS)
-  add_executable(rpgkit_core_tests tests/version_test.cpp)
+  add_executable(rpgkit_core_tests
+    tests/status_test.cpp
+    tests/version_test.cpp
+  )
   target_link_libraries(rpgkit_core_tests PRIVATE rpg::core rpgkit_warnings GTest::gtest_main)
   target_compile_definitions(rpgkit_core_tests PRIVATE
     RPGKIT_PROJECT_VERSION="${PROJECT_VERSION}"
