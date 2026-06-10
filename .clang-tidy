@@ -1,0 +1,13 @@
+---
+# HeaderFilterRegex is load-bearing: without it clang-tidy only diagnoses test
+# .cpp files and silently skips the header-only library, which is the product.
+Checks: >
+  bugprone-*,
+  performance-*,
+  modernize-*,
+  readability-*,
+  cppcoreguidelines-*,
+  -modernize-use-trailing-return-type,
+  -readability-identifier-length
+WarningsAsErrors: '*'
+HeaderFilterRegex: 'core/include/.*'
