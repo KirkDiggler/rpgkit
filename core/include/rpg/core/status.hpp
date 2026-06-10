@@ -8,7 +8,8 @@ namespace rpg::core {
 
 // Result of a fallible core operation. The core API never throws — host
 // engines (Unreal in particular) build with exceptions disabled, so errors
-// travel by value instead. [[nodiscard]] makes ignoring one a compile error.
+// travel by value instead. [[nodiscard]] makes the compiler diagnose an
+// ignored Status (a hard error under -Werror builds like rpgkit's own).
 class [[nodiscard]] Status {
  public:
   static Status ok() { return {true, std::string()}; }

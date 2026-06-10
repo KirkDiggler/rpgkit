@@ -53,6 +53,9 @@ class Bus {
     }
     auto& subscribers = topics_[found->second];
     std::erase_if(subscribers, [id](const Subscription& s) { return s.id == id; });
+    if (subscribers.empty()) {
+      topics_.erase(found->second);  // don't accumulate empty topics forever
+    }
     topicById_.erase(found);
     return Status::ok();
   }
