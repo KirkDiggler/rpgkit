@@ -28,6 +28,8 @@ TEST(StatusTest, CopyIsIndependent) {
   // There is no shared reference here — unlike Go/Java/C#, `copy` is not
   // another pointer to the same Status.
   const Status original = Status::error("boom");
+  // The copy is the point of this test, not an accident:
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
   const Status copy = original;
   EXPECT_FALSE(copy.isOk());
   EXPECT_EQ(copy.message(), "boom");

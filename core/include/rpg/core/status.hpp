@@ -11,11 +11,11 @@ namespace rpg::core {
 // travel by value instead. [[nodiscard]] makes ignoring one a compile error.
 class [[nodiscard]] Status {
  public:
-  static Status ok() { return Status(true, std::string()); }
-  static Status error(std::string message) { return Status(false, std::move(message)); }
+  static Status ok() { return {true, std::string()}; }
+  static Status error(std::string message) { return {false, std::move(message)}; }
 
-  bool isOk() const { return ok_; }
-  const std::string& message() const { return message_; }
+  [[nodiscard]] bool isOk() const { return ok_; }
+  [[nodiscard]] const std::string& message() const { return message_; }
 
  private:
   Status(bool ok, std::string message) : ok_(ok), message_(std::move(message)) {}
