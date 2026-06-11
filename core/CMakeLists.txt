@@ -18,5 +18,8 @@ if(RPGKIT_BUILD_TESTS)
     RPGKIT_PROJECT_VERSION="${PROJECT_VERSION}"
   )
   # add GTest::gmock here when a test first needs it — core v1 tests use hand-written fakes
-  gtest_discover_tests(rpgkit_core_tests)
+  # PRE_TEST: discover tests at ctest time, not build time — build-time
+  # discovery runs the exe with a 5s timeout, which flakes on cold Windows
+  # CI runners (first-launch antivirus scans exceed it).
+  gtest_discover_tests(rpgkit_core_tests DISCOVERY_MODE PRE_TEST)
 endif()
