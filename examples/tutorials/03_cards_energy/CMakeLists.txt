@@ -1,0 +1,2 @@
+add_executable(tutorial_03_cards_energy main.cpp)
+target_link_libraries(tutorial_03_cards_energy PRIVATE rpg::core rpgkit_warnings)

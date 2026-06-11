@@ -6,7 +6,7 @@ downloads, like any library.
 
 The tutorials happen inside the rpgkit clone because everything's already
 set up there. Your actual game graduates out. Living proof these steps
-work: [rpg-demo-game](https://github.com/KirkDiggler/rpg-demo-game) was
+work: [rpgkit-demo-game](https://github.com/KirkDiggler/rpgkit-demo-game) was
 created from this page.
 
 ## 1. Make the project (four files)
@@ -100,7 +100,7 @@ CompileFlags:
   to edit.
 - When the project is more than a toy, `git init` and push it — and if a
   model or agent works in the repo, give it an `AGENTS.md` with the house
-  rules ([rpg-demo-game's](https://github.com/KirkDiggler/rpg-demo-game/blob/main/AGENTS.md)
+  rules ([rpgkit-demo-game's](https://github.com/KirkDiggler/rpgkit-demo-game/blob/main/AGENTS.md)
   is a working template).
 
 ## Gotchas

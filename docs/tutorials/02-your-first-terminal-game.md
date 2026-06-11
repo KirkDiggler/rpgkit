@@ -40,7 +40,7 @@ The whole file is five small pieces. In game terms:
 constexpr int kHeroHp = 20;
 constexpr int kGoblinHp = 18;
 constexpr int kStrikeDamage = 6;
-constexpr int kClawsDamage = 4;
+constexpr int kClawsDamage = 6;
 ```
 
 Every game number, named, in one place at the top — `constexpr int` just
