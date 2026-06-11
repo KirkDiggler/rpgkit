@@ -13,6 +13,7 @@
 // one rule (tough skin). Later tutorials add more rules WITHOUT touching
 // the combat math that's already here. That's the whole trick of rpgkit.
 
+#include <cstdlib>
 #include <iostream>
 #include <limits>
 #include <string>

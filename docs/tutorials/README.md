@@ -37,8 +37,8 @@ subtracted. It travels through a **chain** — a pipeline of rules — and comes
 out with a **receipt** showing what every rule contributed:
 
 ```
-Strike: 6 damage
-  tough-skin (final): 6 -> 5
+  Strike: 6 damage
+    tough-skin (final): 6 -> 5
 ```
 
 Rules never know about each other; the pipeline composes them. When you add
