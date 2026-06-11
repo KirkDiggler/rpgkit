@@ -18,6 +18,7 @@
 // What did NOT change: resolveDamage, readChoice, the goblin, the loop's
 // bones. Growing a game should mostly be adding, not rewriting.
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -109,7 +110,9 @@ int resolveDamage(const std::string& attackName, int baseDamage,
 // receipt exactly like tough-skin does.
 int resolveHeal(const std::string& cardName, int baseHeal, const Fighter& target) {
   rpg::core::Chain<int> heal(std::vector<std::string>{"base", "cap"});
-  const int room = target.maxHp - target.hp;
+  // Clamped to zero: if hp ever exceeds maxHp (an over-heal card, a max-HP
+  // debuff), a negative room would turn healing into damage.
+  const int room = std::max(0, target.maxHp - target.hp);
   mustBeOk(
       heal.add("cap", "max-hp-cap", [room](int amount) { return amount > room ? room : amount; }));
   const rpg::core::Chain<int>::Result result = heal.execute(baseHeal);

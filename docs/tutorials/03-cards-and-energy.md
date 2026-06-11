@@ -104,11 +104,15 @@ does all day.
 
 ```cpp
 rpg::core::Chain<int> heal(std::vector<std::string>{"base", "cap"});
-const int room = target.maxHp - target.hp;
+const int room = std::max(0, target.maxHp - target.hp);
 mustBeOk(heal.add("cap", "max-hp-cap", [room](int amount) {
   return amount > room ? room : amount;
 }));
 ```
+
+(The `std::max(0, ...)` clamp matters: if hp could ever exceed maxHp, a
+negative `room` would turn healing into damage. Defensive rules in copyable
+code earn their keep.)
 
 A healing chain with a cap rule: "you can't heal past full" is not an `if`
 buried in the play logic — it's a named rule on the receipt, same as
