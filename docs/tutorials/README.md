@@ -14,7 +14,7 @@ around it explain what it means in game-design terms, not programmer terms.
 |---|----------|------------------|
 | 01 | [Getting started](01-getting-started.md) | A working setup: rpgkit built, tests passing, an example running |
 | 02 | [Your first terminal game](02-your-first-terminal-game.md) | A playable fight: hero vs goblin, damage with receipts, win/lose |
-| 03 | Cards & energy *(coming)* | A hand of cards and an energy budget — the deck-builder skeleton |
+| 03 | [Cards & energy](03-cards-and-energy.md) | A hand of cards and an energy budget — the deck-builder skeleton |
 | 04 | Block *(coming)* | Defense that absorbs damage — your first taste of stacking rules |
 | 05 | A smarter monster *(coming)* | The goblin gets its own cards and a simple brain |
 | 06 | Statuses that stick around *(coming, needs engine v1)* | Bleed, Strength — effects that listen and act on their own |

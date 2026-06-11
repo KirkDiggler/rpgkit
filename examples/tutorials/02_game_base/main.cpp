@@ -30,7 +30,7 @@ namespace {
 constexpr int kHeroHp = 20;
 constexpr int kGoblinHp = 18;
 constexpr int kStrikeDamage = 6;
-constexpr int kClawsDamage = 4;
+constexpr int kClawsDamage = 6;
 
 // A character sheet. That's all a struct is: named numbers travelling
 // together.
