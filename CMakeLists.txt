@@ -7,6 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(RPGKIT_BUILD_TESTS "Build rpgkit tests" ${PROJECT_IS_TOP_LEVEL})
+option(RPGKIT_BUILD_EXAMPLES "Build rpgkit examples" ${PROJECT_IS_TOP_LEVEL})
 
 # Strict warnings for rpgkit's own targets (tests and, later, examples).
 # Linked PRIVATE per target rather than set globally, so dependencies built in
@@ -33,3 +34,6 @@ if(RPGKIT_BUILD_TESTS)
 endif()
 
 add_subdirectory(core)
+if(RPGKIT_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
