@@ -39,11 +39,16 @@ per execution:
 
 ```cpp
 std::mt19937 rng{std::random_device{}()};
-damage.add("effects", "bless", [&rng](int dmg) {
+rpg::core::Status blessAdded = damage.add("effects", "bless", [&rng](int dmg) {
   std::uniform_int_distribution<int> d4{1, 4};
   return dmg + d4(rng);
 });
+if (!blessAdded.isOk()) { /* handle blessAdded.message() */ }
 ```
+
+(Example programs wrap this check in a small `mustBeOk` helper — see
+chain_basics — so the happy path stays readable. Either way: the Status is
+always looked at.)
 
 **4. Execute with the starting value; read value + receipt.**
 
@@ -56,7 +61,8 @@ const rpg::core::Chain<int>::Result result = damage.execute(5);
 **5. Remove by id when an effect ends.**
 
 ```cpp
-damage.remove("rage");  // Status; error if "rage" isn't in the chain
+rpg::core::Status rageRemoved = damage.remove("rage");
+if (!rageRemoved.isOk()) { /* "rage" wasn't in the chain */ }
 ```
 
 ## Expected output (from chain_basics)
@@ -64,10 +70,14 @@ damage.remove("rage");  // Status; error if "rage" isn't in the chain
 ```
 Strike! base damage 5
   rage (effects): 5 -> 7
-  bless (effects): 7 -> 10
-  vulnerable (final): 8 -> 16     <- bless line varies: it's a real d4
-final damage: 16
+  bless (effects): 7 -> 10        <- this line varies run to run: real d4
+  vulnerable (final): 10 -> 20
+final damage: 20
 ```
+
+Every step's `before` equals the previous step's `after` — the receipt is one
+continuous fold. (Your bless roll will differ; the rage and vulnerable
+arithmetic won't.)
 
 ## Rules of thumb
 
