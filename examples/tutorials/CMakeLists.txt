@@ -3,3 +3,4 @@
 # the tutorials can never silently rot.
 add_subdirectory(02_game_base)
 add_subdirectory(03_cards_energy)
+add_subdirectory(04_block)
