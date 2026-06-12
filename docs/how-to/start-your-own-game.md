@@ -32,7 +32,7 @@ include(FetchContent)
 FetchContent_Declare(
   rpgkit
   GIT_REPOSITORY https://github.com/KirkDiggler/rpgkit.git
-  GIT_TAG v0.1.0
+GIT_TAG v0.1.1
 )
 FetchContent_MakeAvailable(rpgkit)
 
@@ -90,7 +90,7 @@ CompileFlags:
 
 ## Rules of thumb
 
-- **Pin a tag, never a branch.** `GIT_TAG v0.1.0` means your game builds the
+- **Pin a tag, never a branch.** `GIT_TAG v0.1.1` means your game builds the
   same way next year. Upgrading rpgkit = changing that one line and
   rebuilding. Tags and what's in them: the
   [releases page](https://github.com/KirkDiggler/rpgkit/releases).

@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-06-11 (core v1 complete)_
+_Last updated: 2026-06-11 (core v1.1 — pattern layer)_
 
 ## Current health
 
@@ -9,17 +9,16 @@ _Last updated: 2026-06-11 (core v1 complete)_
 veneer, `Action<TInput>`, and `Effect` with tracked lifecycle — 40 tests
 including the v1 acceptance integration (`examples/strike`: an Action fires,
 an Effect modifies it, breakdown out, removal reverts). CI green on Linux
-clang/gcc + Windows MSVC. Released through v0.1.0; v0.2.0 tag pending with
-topics + Action/Effect.
+clang/gcc + Windows MSVC. Released through v0.1.1.
 
 ## Active work
 
 - **Tutorials** (`docs/tutorials/`) — progressive series building a terminal
   deck-builder; written for non-programmers and small local models alike.
-  01 (setup) and 02 (game base, `examples/tutorials/02_game_base`) landing
-  now; 03+ (cards/energy, block, monster AI) follow.
-- **v0.2.0 release** — tag once Action/Effect merges so consumers (the demo
-  game) can pin the full nervous system.
+  01–04 shipped (setup, game base, cards/energy, block); 05+ (monster AI,
+  bus effects, card actions, town crier, boss fight) following.
+- **v0.2.0 — Effects as autonomous bus citizens** (tutorial 06). Tag once
+  Effects own their lifecycle (subscribe/expire/remove) without the game loop.
 - **Demo-game experiment** — local qwen model builds against the tutorials/
   cookbook; findings become doc/API issues. Design:
   [rpg-project/ideas/rpgkit-demo-game](https://github.com/KirkDiggler/rpg-project/tree/main/ideas/rpgkit-demo-game)
