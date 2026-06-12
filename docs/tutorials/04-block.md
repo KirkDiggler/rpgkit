@@ -41,14 +41,21 @@ struct Fighter {
 };
 ```
 
-And the expiry rule lives at the top of the player phase:
+And the expiry rule lives at the very top of the turn loop — before the
+status line prints:
 
 ```cpp
-  // Shields don't stack across turns (the Slay-the-Spire rule): whatever
-  // block survived the goblin's attack expires now, at the START of your
-  // turn — so a fresh Defend still protects you through the goblin's reply.
-  hero.block = 0;
+    // Shields don't stack across turns (the Slay-the-Spire rule): whatever
+    // block survived the goblin's attack expires at the START of your turn —
+    // cleared BEFORE the status line prints, so the UI never shows a shield
+    // that's already gone. A fresh Defend still protects you through the
+    // goblin's reply.
+    hero.block = 0;
 ```
+
+Position matters twice here: gameplay (expire at start-of-your-turn, not
+end) and honesty (clear before printing, or the header shows a shield
+that's about to vanish).
 
 Why start-of-*your*-turn and not end? Trace a turn: you Defend, the goblin
 attacks, your shield absorbs. If block expired at your turn's *end*, Defend
@@ -111,8 +118,8 @@ actually did something.
    The block rule already has the perfect place for it — you'll need to
    capture the goblin too: `[&hero, &goblin]`.
 3. **Break the timing on purpose:** move `hero.block = 0;` to the *end* of
-   the player phase, play a few turns, and feel why Defend became a dead
-   card. Put it back. (Timing bugs in deck-builders are usually this exact
+   the turn loop, play a few turns, and feel why Defend became a dead card.
+   Put it back. (Timing bugs in deck-builders are usually this exact
    mistake in some disguise.)
 
 **Next:** tutorial 05 gives the goblin its own hand of cards and a simple

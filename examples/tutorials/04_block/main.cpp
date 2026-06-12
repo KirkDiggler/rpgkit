@@ -192,10 +192,6 @@ enum class PhaseResult : std::uint8_t { kTurnOver, kGoblinDown, kQuit };
 // The player phase: a hand, a budget, and choices — keep playing cards
 // until the energy is gone, the player stops, or the goblin drops.
 PhaseResult playerPhase(Fighter& hero, Fighter& goblin, std::mt19937& rng) {
-  // Shields don't stack across turns (the Slay-the-Spire rule): whatever
-  // block survived the goblin's attack expires now, at the START of your
-  // turn — so a fresh Defend still protects you through the goblin's reply.
-  hero.block = 0;
   std::vector<Card> hand = dealHand(rng);
   std::vector<bool> played(hand.size(), false);
   int energy = kEnergyPerTurn;
@@ -258,6 +254,13 @@ int main() {
   // The turn loop, now readable as a sentence: player phase, then unless
   // it ended the game, goblin phase, then check the hero still stands.
   while (true) {
+    // Shields don't stack across turns (the Slay-the-Spire rule): whatever
+    // block survived the goblin's attack expires at the START of your turn —
+    // cleared BEFORE the status line prints, so the UI never shows a shield
+    // that's already gone. A fresh Defend still protects you through the
+    // goblin's reply.
+    hero.block = 0;
+
     std::cout << '\n'
               << hero.name << ": " << hero.hp << "/" << hero.maxHp << " HP, " << hero.block
               << " block   " << goblin.name << ": " << goblin.hp << " HP\n";
