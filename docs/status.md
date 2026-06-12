@@ -13,12 +13,14 @@ clang/gcc + Windows MSVC. Released through v0.1.1.
 
 ## Active work
 
-- **Tutorials** (`docs/tutorials/`) — progressive series building a terminal
-  deck-builder; written for non-programmers and small local models alike.
-  01–04 shipped (setup, game base, cards/energy, block); 05+ (monster AI,
-  bus effects, card actions, town crier, boss fight) following.
+- **Tutorial tracks** — two-path structure in `docs/tutorials/`:
+  - **Campaign** (03–09): game-building series, feature by feature
+  - **Workshop** (W01–W04): architecture deep-dives (Bus, Chains, Rage,
+     Build Your Own Effect)
+  - **Juice appendix**: optional terminal polish at any checkpoint
 - **v0.2.0 — Effects as autonomous bus citizens** (tutorial 06). Tag once
-  Effects own their lifecycle (subscribe/expire/remove) without the game loop.
+  Effects own their lifecycle (subscribe/expire/remove) without the game
+  loop orchestrating them.
 - **Demo-game experiment** — local qwen model builds against the tutorials/
   cookbook; findings become doc/API issues. Design:
   [rpg-project/ideas/rpgkit-demo-game](https://github.com/KirkDiggler/rpg-project/tree/main/ideas/rpgkit-demo-game)
