@@ -56,5 +56,10 @@ relitigate them.
 
 ## Per-module docs
 
-- `core/` — contracts above; implementation lands in PRs 2–4 (Status/Bus/Chain,
-  typed topic veneer, Action/Effect + the Strike example).
+- `core/` — all four contracts implemented (v1 complete). Headers:
+  `status.hpp`, `bus.hpp`, `chain.hpp`, `topic.hpp` (TopicDef/Topic/ChainedTopic
+  — the typed veneer; pointer-form `any_cast` turns type mismatches into
+  `Status` errors), `action.hpp` + `entity.hpp`, `effect.hpp`. The composed
+  proof: `examples/strike` and its machine-checked twin
+  `core/tests/strike_integration_test.cpp` — an Action fires, an Effect
+  modifies it, the breakdown names the contributor, removal reverts.
