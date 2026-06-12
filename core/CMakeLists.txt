@@ -11,6 +11,7 @@ if(RPGKIT_BUILD_TESTS)
     tests/bus_test.cpp
     tests/chain_test.cpp
     tests/status_test.cpp
+    tests/topic_test.cpp
     tests/version_test.cpp
   )
   target_link_libraries(rpgkit_core_tests PRIVATE rpg::core rpgkit_warnings GTest::gtest_main)
