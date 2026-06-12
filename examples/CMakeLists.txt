@@ -4,3 +4,4 @@
 add_subdirectory(chain_basics)
 add_subdirectory(strike)
 add_subdirectory(tutorials)
+add_subdirectory(workshop)

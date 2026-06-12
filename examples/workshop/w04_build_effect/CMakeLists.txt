@@ -1,0 +1,5 @@
+add_executable(workshop_w04_effect_skeleton skeleton.cpp)
+target_link_libraries(workshop_w04_effect_skeleton PRIVATE rpg::core rpgkit_warnings)
+
+add_executable(workshop_w04_effect_solution solution.cpp)
+target_link_libraries(workshop_w04_effect_solution PRIVATE rpg::core rpgkit_warnings)
