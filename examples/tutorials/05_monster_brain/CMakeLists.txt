@@ -1,0 +1,2 @@
+add_executable(tutorial_05_monster_brain main.cpp)
+target_link_libraries(tutorial_05_monster_brain PRIVATE rpg::core rpgkit_warnings)

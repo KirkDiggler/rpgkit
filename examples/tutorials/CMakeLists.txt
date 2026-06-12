@@ -4,3 +4,4 @@
 add_subdirectory(02_game_base)
 add_subdirectory(03_cards_energy)
 add_subdirectory(04_block)
+add_subdirectory(05_monster_brain)
