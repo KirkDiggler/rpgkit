@@ -18,21 +18,28 @@ class fakeBleedEffect : public Effect {
  public:
   fakeBleedEffect() : Effect("bleed-1", "spider-bite") {}
 
-  int attackCalls = 0;
-  int turnCalls = 0;
+  [[nodiscard]] int attackCalls() const { return attackCalls_; }
+  [[nodiscard]] int turnCalls() const { return turnCalls_; }
+  [[nodiscard]] SubscriptionId attackSubscription() const { return attackSub_; }
 
  protected:
   Status onApply(Bus& bus) override {
-    track(bus.subscribe("combat.attack", [this](const std::any&) {
-      ++attackCalls;
+    attackSub_ = bus.subscribe("combat.attack", [this](const std::any&) {
+      ++attackCalls_;
       return Status::ok();
-    }));
+    });
+    track(attackSub_);
     track(bus.subscribe("turn.ended", [this](const std::any&) {
-      ++turnCalls;
+      ++turnCalls_;
       return Status::ok();
     }));
     return Status::ok();
   }
+
+ private:
+  int attackCalls_ = 0;
+  int turnCalls_ = 0;
+  SubscriptionId attackSub_;
 };
 
 // An effect whose setup fails partway — apply() must clean up the half-done
@@ -68,7 +75,7 @@ TEST(EffectTest, ApplySubscribesAndMarksActive) {
 
   EXPECT_TRUE(effect.isActive());
   ASSERT_TRUE(bus.publish("combat.attack", std::any(0)).isOk());
-  EXPECT_EQ(effect.attackCalls, 1);
+  EXPECT_EQ(effect.attackCalls(), 1);
 }
 
 TEST(EffectTest, RemoveUnsubscribesEverythingTracked) {
@@ -81,8 +88,8 @@ TEST(EffectTest, RemoveUnsubscribesEverythingTracked) {
   EXPECT_FALSE(effect.isActive());
   ASSERT_TRUE(bus.publish("combat.attack", std::any(0)).isOk());
   ASSERT_TRUE(bus.publish("turn.ended", std::any(0)).isOk());
-  EXPECT_EQ(effect.attackCalls, 0);
-  EXPECT_EQ(effect.turnCalls, 0);
+  EXPECT_EQ(effect.attackCalls(), 0);
+  EXPECT_EQ(effect.turnCalls(), 0);
 }
 
 TEST(EffectTest, DoubleApplyIsError) {
@@ -110,7 +117,24 @@ TEST(EffectTest, ApplyCanRepeatAfterRemove) {
 
   EXPECT_TRUE(effect.isActive());
   ASSERT_TRUE(bus.publish("combat.attack", std::any(0)).isOk());
-  EXPECT_EQ(effect.attackCalls, 1);
+  EXPECT_EQ(effect.attackCalls(), 1);
+}
+
+TEST(EffectTest, RemoveSweepsEverythingEvenWhenOneUnsubscribeFails) {
+  // If a tracked subscription vanished externally, remove() must still
+  // sweep the rest and deactivate — half-removed-but-active is the one
+  // state the lifecycle must never produce. The error is still reported.
+  Bus bus;
+  fakeBleedEffect effect;
+  ASSERT_TRUE(effect.apply(bus).isOk());
+  ASSERT_TRUE(bus.unsubscribe(effect.attackSubscription()).isOk());  // gone behind its back
+
+  const Status removed = effect.remove();
+
+  EXPECT_FALSE(removed.isOk());     // the unknown-id failure is surfaced...
+  EXPECT_FALSE(effect.isActive());  // ...but the effect still fully deactivated
+  ASSERT_TRUE(bus.publish("turn.ended", std::any(0)).isOk());
+  EXPECT_EQ(effect.turnCalls(), 0);  // and the OTHER subscription was swept
 }
 
 TEST(EffectTest, FailedApplyCleansUpAndStaysInactive) {

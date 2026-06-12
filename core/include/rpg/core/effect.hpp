@@ -62,16 +62,21 @@ class Effect {
     if (!active_ || bus_ == nullptr) {
       return Status::error("effect not active: " + id_);
     }
+    // Best-effort sweep: Bus::unsubscribe only fails for unknown ids (the
+    // subscription is already gone), so never stop early — finish removing
+    // the rest, clear state regardless, and report the first error. A
+    // fail-fast here would leave the effect half-removed and still active.
+    Status firstError = Status::ok();
     for (const SubscriptionId sub : tracked_) {
       Status removed = bus_->unsubscribe(sub);
-      if (!removed.isOk()) {
-        return removed;
+      if (!removed.isOk() && firstError.isOk()) {
+        firstError = std::move(removed);
       }
     }
     tracked_.clear();
     bus_ = nullptr;
     active_ = false;
-    return Status::ok();
+    return firstError;
   }
 
  protected:
