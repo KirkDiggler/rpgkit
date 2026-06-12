@@ -101,6 +101,17 @@ One standalone doc with five checkpoints, adoptable by any tutorial at any time:
 
 Each checkpoint says "works with Campaign tutorial N, Workshop module M."
 
+### Going further
+
+The Juice section is designed to grow indefinitely — a place to park ideas that don't belong in the core tutorials:
+
+- **Menus and choice lists** — interactive selection with arrow keys (termios raw mode, stdlib only)
+- **Sprite art** — ANSI art for the goblin, the player, the boss
+- **Animation** — damage numbers that scroll, health bars that tween
+- **Beyond terminal** — signposts to FTXUI (full TUI framework), SDL (graphical), and eventually the Unreal plugin path. Each is a "what's possible" teaser, not a full tutorial.
+
+Over time, Juice becomes the "yes, and" section — proof that a stdlib-only terminal game can still feel polished, and a bridge to richer presentation when the reader is ready.
+
 ## README Changes
 
 `docs/tutorials/README.md` gets a fork after "02: Your First Terminal Game":
