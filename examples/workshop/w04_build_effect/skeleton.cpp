@@ -1,8 +1,8 @@
-#include <cstdio>
+#include <iostream>
 
 int main() {
-  std::printf("=== Build Your Own Effect ===\n");
-  std::printf("Implement a Burning status using the Effect contract.\n");
-  std::printf("See solution.cpp for one reference implementation.\n");
+  std::cout << "=== Build Your Own Effect ===\n";
+  std::cout << "Implement a Burning status using the Effect contract.\n";
+  std::cout << "See solution.cpp for one reference implementation.\n";
   return 0;
 }
