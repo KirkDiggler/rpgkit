@@ -38,10 +38,12 @@ tutorial 02 left off; no engine internals required.
 | 03 | [Cards & energy](03-cards-and-energy.md) | A hand of cards and an energy budget — the deck-builder skeleton |
 | 04 | [Block](04-block.md) | Defense that absorbs damage — the first rule that spends a resource |
 | 05 | [Monster brain](05-monster-brain.md) | The goblin gets its own cards and a simple brain |
-| 06 | [Statuses that stick around](06-statuses.md) | Bleed — an Effect that listens, ticks, and removes itself |
-| 07 | Cards become Actions *(coming)* | Card-playing logic migrates into Action contracts |
-| 08 | The town crier *(coming)* | A combat announcer — UI is just another subscriber |
-| 09 | Boss fight *(coming)* | A phase-based boss using the full nervous system |
+| 06 | [The Bus](06-the-bus.md) | Publish/subscribe — the game loop announces, subscribers respond |
+| 07 | Rich Events *(coming)* | Events carry context; chained topics let subscribers contribute modifiers |
+| 08 | Effects *(coming)* | An autonomous subscriber that manages its own lifecycle |
+| 09 | Cards Become Actions *(coming)* | Card-playing logic migrates into Action contracts |
+| 10 | The Town Crier *(coming)* | A combat announcer — UI is just another subscriber |
+| 11 | Boss Fight *(coming)* | A phase-based boss using the full nervous system |
 
 ---
 
@@ -49,7 +51,7 @@ tutorial 02 left off; no engine internals required.
 
 Architecture deep-dives for the engineer who wants to understand how rpgkit
 works and how to build custom rules on top of it. Rejoins the Campaign at
-tutorial 06.
+tutorial 08 (Effects).
 
 | # | Module | What you learn |
 |---|--------|----------------|
