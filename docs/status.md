@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-06-13 (v0.1.2 — Bus + ChainedTopic)_
+_Last updated: 2026-06-13 (v0.1.2 — Rich Events)_
 
 ## Current health
 
@@ -9,32 +9,35 @@ _Last updated: 2026-06-13 (v0.1.2 — Bus + ChainedTopic)_
 veneer, `Action<TInput>`, and `Effect` with tracked lifecycle — 40 tests
 including the v1 acceptance integration (`examples/strike`: an Action fires,
 an Effect modifies it, breakdown out, removal reverts). CI green on Linux
-clang/gcc + Windows MSVC. Released through v0.1.1.
+clang/gcc + Windows MSVC. Released through v0.1.2.
+
+**Tutorials 01–07 are live** in `examples/tutorials/`. The tutorial-06 redesign
+split "Statuses that Stick Around" into three focused episodes (06: Bus,
+07: Rich Events, 08: Effects). Design spec:
+`docs/journey/2026-06-13-linear-tutorials-6-8.md`.
 
 ## Active work
 
+- **Tutorial 08 — Effects** (#29): BleedEffect subscribes to `turn.ended`,
+  ticks damage, self-removes at zero. The game loop goes from orchestrator
+  to announcer. This is the v0.2.0 milestone — Effects own their lifecycle.
 - **Tutorial tracks** — two-path structure in `docs/tutorials/`:
   - **Campaign** (03–08, expanding): game-building series, feature by feature
   - **Workshop** (W01–W04): architecture deep-dives (Bus, Chains, Rage,
      Build Your Own Effect)
   - **Juice appendix**: optional terminal polish at any checkpoint
-- **Tutorial 06 redesign** — original "Statuses that Stick Around" (single
-  tutorial covering Bus + Topics + DamageAttempt + Effects) is being split
-  into three focused tutorials:
-  - 06: The Bus (publish/subscribe, turn events)
-  - 07: Rich Events (chained topics, DamageAttempt)
-  - 08: Effects (BleedEffect, autonomous lifecycle)
-  - Design spec: `docs/journey/2026-06-13-linear-tutorials-6-8.md`
-  - Old tutorials 07+ will renumber to 09+
-- **v0.2.0 — Effects as autonomous bus citizens** (tutorial 08). Tag once
-  Effects own their lifecycle (subscribe/expire/remove) without the game
-  loop orchestrating them.
 - **Demo-game experiment** — local qwen model builds against the tutorials/
   cookbook; findings become doc/API issues. Design:
   [rpg-project/ideas/rpgkit-demo-game](https://github.com/KirkDiggler/rpg-project/tree/main/ideas/rpgkit-demo-game)
 
+## Completed (recent)
+
+- **Tutorial 07 — Rich Events** (v0.1.2): `DamageAttempt`, `ChainedTopic`, tough-skin and block as bus subscribers. Plumbing refactor — behavior identical to tutorial 06, but effects can now subscribe too.
+- **Tutorial 06 — The Bus** (v0.1.2): `rpg::core::Bus`, `turn.ended` notification topic, combat-log subscriber, block reset via subscriber instead of inline code.
+
 ## Paused / not started
 
+- Tutorials 09+ (old numbering 07+): Cards Become Actions, The Town Crier, Boss Fight — renumbered pending after tutorial 08 lands
 - `mechanics/`, `rulebooks/` modules — deferred until core v1 lands
 - C ABI layer (Unity), Unreal plugin wrapper — out of scope for v1
 
