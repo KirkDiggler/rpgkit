@@ -7,7 +7,7 @@ namespace rpg::core {
 
 // rpgkit release version. Kept in lockstep with the CMake project() version,
 // enforced by version_test.
-inline constexpr std::string_view kVersion = "0.1.2";
+inline constexpr std::string_view kVersion = "0.2.0";
 
 }  // namespace rpg::core
 
