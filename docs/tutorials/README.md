@@ -39,7 +39,7 @@ tutorial 02 left off; no engine internals required.
 | 04 | [Block](04-block.md) | Defense that absorbs damage — the first rule that spends a resource |
 | 05 | [Monster brain](05-monster-brain.md) | The goblin gets its own cards and a simple brain |
 | 06 | [The Bus](06-the-bus.md) | Publish/subscribe — the game loop announces, subscribers respond |
-| 07 | Rich Events *(coming)* | Events carry context; chained topics let subscribers contribute modifiers |
+| 07 | [Rich Events](07-rich-events.md) | Events carry context; chained topics let subscribers contribute modifiers |
 | 08 | Effects *(coming)* | An autonomous subscriber that manages its own lifecycle |
 | 09 | Cards Become Actions *(coming)* | Card-playing logic migrates into Action contracts |
 | 10 | The Town Crier *(coming)* | A combat announcer — UI is just another subscriber |
