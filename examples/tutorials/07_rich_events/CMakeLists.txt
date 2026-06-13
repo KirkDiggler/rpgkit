@@ -1,0 +1,2 @@
+add_executable(tutorial_07_rich_events main.cpp)
+target_link_libraries(tutorial_07_rich_events PRIVATE rpg::core rpgkit_warnings)
