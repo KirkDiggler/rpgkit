@@ -272,6 +272,9 @@ int aiPick(const std::vector<Card>& hand, const std::vector<bool>& played, int e
 
 // Returns true if the hero fell.
 bool goblinPhase(Fighter& goblin, Fighter& hero, std::mt19937& rng, rpg::core::Bus& /*bus*/) {
+  // Goblin block resets at the start of its turn — same timing as tutorial 05.
+  goblin.block = 0;
+
   std::vector<Card> hand = dealHand(monsterCardPool(), rng);
   std::vector<bool> played(hand.size(), false);
   int energy = kGoblinEnergyPerTurn;
@@ -331,19 +334,19 @@ int main() {
   Fighter goblin{.name = "Goblin", .hp = kGoblinHp, .maxHp = kGoblinHp};
   std::mt19937 rng{std::random_device{}()};
 
-  // Shields expire at the end of each turn — a subscriber handles this
-  // instead of the game loop doing it explicitly.
-  turnEndedTopic().on(bus).subscribe([&hero, &goblin](const int& /*turn*/) {
-    hero.block = 0;
-    goblin.block = 0;
-    std::cout << "  Shields expire.\n";
+  // Combat log — a subscriber that prints turn announcements. The game loop
+  // doesn't know about this; it just publishes turn.ended.
+  turnEndedTopic().on(bus).subscribe([](const int& turn) {
+    std::cout << "— Turn " << turn << " complete —\n";
     return rpg::core::Status::ok();
   });
 
-  // Combat log — another subscriber, another thing the game loop doesn't
-  // need to know about. Pure flavor, zero mechanics.
-  turnEndedTopic().on(bus).subscribe([](const int& turn) {
-    std::cout << "— Turn " << turn << " complete —\n";
+  // Shields expire at the end of each turn — a subscriber resets the hero's
+  // block. (The goblin's block is cleared at the start of its own phase, just
+  // like in tutorial 05, so goblin block persists through the player phase.)
+  turnEndedTopic().on(bus).subscribe([&hero](const int& /*turn*/) {
+    hero.block = 0;
+    std::cout << "  Shields expire.\n";
     return rpg::core::Status::ok();
   });
 

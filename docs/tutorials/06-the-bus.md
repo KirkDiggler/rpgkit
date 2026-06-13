@@ -111,30 +111,7 @@ Two flavors:
 
 ### 3. Subscribing — respond without the loop knowing
 
-The shield-expiry rule moves out of the game loop and into a subscriber:
-
-```cpp
-turnEndedTopic().on(bus).subscribe([&hero, &goblin](const int& /*turn*/) {
-  hero.block = 0;
-  goblin.block = 0;
-  std::cout << "  Shields expire.\n";
-  return rpg::core::Status::ok();
-});
-```
-
-Three things to notice:
-
-1. **The handler returns `Status::ok()`.** Every handler returns a Status. If
-   something goes wrong, return an error Status. If everything's fine, return
-   `ok()`. The Bus checks for errors during publish and propagates the first
-   one.
-2. **It captures `hero` and `goblin` by reference.** Subscribers are lambdas —
-   they can capture anything in scope. They're just code, not a special class.
-3. **It prints a message.** Subscribers can do anything — modify state, print
-   output, trigger other events. The game loop doesn't know this subscriber
-   exists.
-
-The combat log is the same pattern, even simpler:
+The combat log is the simplest subscriber:
 
 ```cpp
 turnEndedTopic().on(bus).subscribe([](const int& turn) {
@@ -142,6 +119,36 @@ turnEndedTopic().on(bus).subscribe([](const int& turn) {
   return rpg::core::Status::ok();
 });
 ```
+
+Two things to notice:
+
+1. **The handler returns `Status::ok()`.** Every handler returns a Status. If
+   something goes wrong, return an error Status. If everything's fine, return
+   `ok()`. The Bus checks for errors during publish and propagates the first
+   one.
+2. **It prints a message.** Subscribers can do anything — modify state, print
+   output, trigger other events. The game loop doesn't know this subscriber
+   exists.
+
+The shield-expiry subscriber goes further — it modifies game state:
+
+```cpp
+turnEndedTopic().on(bus).subscribe([&hero](const int& /*turn*/) {
+  hero.block = 0;
+  std::cout << "  Shields expire.\n";
+  return rpg::core::Status::ok();
+});
+```
+
+This resets the hero's block. It captures `hero` by reference — subscribers
+are lambdas, they can capture anything in scope. They're just code, not a
+special class.
+
+Note: the goblin's block is still cleared at the start of `goblinPhase()`,
+same as tutorial 05. `turn.ended` fires after the goblin phase, so clearing
+goblin block there would make it expire before the player's next turn. Goblin
+block carries through the player phase and resets when the goblin's turn
+begins — same timing as before.
 
 Pure flavor, zero mechanics. But it proves the Bus is for more than just combat
 logic — anything that needs to respond to "a turn ended" can subscribe.
@@ -155,8 +162,8 @@ The game loop's entire interaction with the Bus is one line:
 mustBeOk(turnEndedTopic().on(bus).publish(turnNumber));
 ```
 
-That's it. The loop doesn't reset shields. It doesn't print turn numbers. It
-publishes one event and lets subscribers handle the rest. If you add a new
+That's it. The loop doesn't reset hero shields. It doesn't print turn numbers.
+It publishes one event and lets subscribers handle the rest. If you add a new
 subsystem — enrage timers, regen ticks, UI updates — you add another subscriber.
 The loop never changes.
 
@@ -166,17 +173,21 @@ propagates up. Fail-fast, same as everywhere else in rpgkit.
 
 ### 5. What the loop used to do
 
-In tutorial 05, the main loop reset shields directly:
+In tutorial 05, the main loop reset hero shields directly:
 
 ```cpp
 hero.block = 0;    // explicit, inline
 ```
 
-Now that line is gone. The subscriber handles it. The loop doesn't even know
-shields exist — it just announces turns.
+Now that line is gone. A subscriber handles it — the game loop doesn't even
+know shields exist, it just announces turns.
 
-The same goes for `goblin.block = 0` in `goblinPhase()`. Gone. The subscriber
-handles it for both fighters. One rule, one subscriber, bothcombatants.
+The goblin's block is still cleared explicitly at the start of `goblinPhase()`
+(the same timing as tutorial 05 — goblin block persists through the player
+phase and resets when the goblin's turn begins). Only hero block moved to a
+subscriber, because `turn.ended` fires after the goblin phase. Moving goblin
+block there would make it expire before the player's next turn, which changes
+the timing.
 
 ### 6. Bus passed through, not yet used for damage
 

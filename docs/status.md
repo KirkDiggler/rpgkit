@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-06-11 (core v1.1 — pattern layer)_
+_Last updated: 2026-06-13 (tutorial 06 — The Bus)_
 
 ## Current health
 
@@ -26,7 +26,7 @@ clang/gcc + Windows MSVC. Released through v0.1.1.
   - 08: Effects (BleedEffect, autonomous lifecycle)
   - Design spec: `docs/journey/2026-06-13-linear-tutorials-6-8.md`
   - Old tutorials 07+ will renumber to 09+
-- **v0.2.0 — Effects as autonomous bus citizens** (tutorial 06). Tag once
+- **v0.2.0 — Effects as autonomous bus citizens** (tutorial 08). Tag once
   Effects own their lifecycle (subscribe/expire/remove) without the game
   loop orchestrating them.
 - **Demo-game experiment** — local qwen model builds against the tutorials/
