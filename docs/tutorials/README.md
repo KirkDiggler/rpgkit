@@ -38,7 +38,7 @@ tutorial 02 left off; no engine internals required.
 | 03 | [Cards & energy](03-cards-and-energy.md) | A hand of cards and an energy budget — the deck-builder skeleton |
 | 04 | [Block](04-block.md) | Defense that absorbs damage — the first rule that spends a resource |
 | 05 | [Monster brain](05-monster-brain.md) | The goblin gets its own cards and a simple brain |
-| 06 | Statuses that stick around *(coming)* | Bleed, Strength — effects that listen and act on their own |
+| 06 | [Statuses that stick around](06-statuses.md) | Bleed — an Effect that listens, ticks, and removes itself |
 | 07 | Cards become Actions *(coming)* | Card-playing logic migrates into Action contracts |
 | 08 | The town crier *(coming)* | A combat announcer — UI is just another subscriber |
 | 09 | Boss fight *(coming)* | A phase-based boss using the full nervous system |
