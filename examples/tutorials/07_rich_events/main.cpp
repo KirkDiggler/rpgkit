@@ -17,9 +17,11 @@
 //   3. damageStages() — {"base", "effects", "final"}, shared across every
 //      resolution. The "effects" stage is empty in this tutorial (no active
 //      effects yet), but it's where Bleed will contribute in tutorial 08.
-//   4. Tough-skin and block are now subscribers on combat.damage instead of
-//      inline lambdas in the resolution functions.
-//   5. resolveCardDamage and resolveMonsterDamage publish to the chained topic
+//   4. Tough-skin is now a subscriber on combat.damage — it checks the target
+//      and only reduces damage against the goblin (not the hero).
+//   5. Block is still an inline chain modifier in resolveMonsterDamage (it
+//      needs mutable hero state), but it now operates on DamageAttempt.
+//   6. resolveCardDamage and resolveMonsterDamage publish to the chained topic
 //      to collect contributions, then execute the chain locally.
 // What did NOT change: no Effects, no Bleed, no Rend, no behavior change.
 // Healing stays Chain<int> (no effect modifies it yet).
@@ -370,12 +372,17 @@ int main() {
   Fighter goblin{.name = "Goblin", .hp = kGoblinHp, .maxHp = kGoblinHp};
   std::mt19937 rng{std::random_device{}()};
 
-  // Tough-skin: reduces all incoming damage by 1. In tutorial 06 this was an
-  // inline lambda baked into cardDamage(). Now it's a subscriber on the combat
-  // damage chained topic — the same mechanism Bleed will use in tutorial 08
-  // to amplify incoming hits.
+  // Tough-skin: the goblin has thick skin, reducing incoming damage by 1.
+  // In tutorial 06 this was an inline lambda baked into cardDamage(). Now it's
+  // a subscriber on the combat damage chained topic, and it checks the target —
+  // only the goblin benefits from tough-skin, not the hero. This is the key
+  // advantage of DamageAttempt over Chain<int>: subscribers can read the target
+  // and decide whether to modify the damage.
   damageTopic().onChained(bus).subscribe(
-      [](const DamageAttempt& /*event*/, rpg::core::Chain<DamageAttempt>& chain) {
+      [&goblin](const DamageAttempt& event, rpg::core::Chain<DamageAttempt>& chain) {
+        if (event.target != goblin.name) {
+          return rpg::core::Status::ok();
+        }
         mustBeOk(chain.add("final", "tough-skin", [](DamageAttempt data) {
           data.baseAmount = std::max(0, data.baseAmount - 1);
           return data;

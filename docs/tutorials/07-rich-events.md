@@ -29,7 +29,6 @@ Hero: 20/20 HP, 0 block   Goblin: 30 HP
   --- Goblin's turn (Goblin: 25 HP) ---
   Goblin plays Claws (cost 0, 6 dmg)
   Claws: 6 damage
-    tough-skin (final): 6 -> 5
   (Goblin out of energy)
 
 — Turn 1 complete —
@@ -50,10 +49,10 @@ Chain<int> damage({"base", "final"});
 damage.add("final", "tough-skin", [](int dmg) { return dmg - 1; });
 ```
 
-The chain didn't know *who* was being hit. Tough-skin reduced everything by
-1, whether the hero or the goblin was the target. That works for a universal
-rule, but it can't express "reduce damage only when the goblin is hit" or
-"amplify damage only when the target has Bleed."
+The chain didn't know *who* was being hit. Tough-skin reduced damage by 1,
+but only when it was in the chain — player card damage had it, monster damage
+didn't. The difference was implicit (which resolution function you called),
+not explicit (a field on the event).
 
 After tutorial 07:
 
@@ -123,7 +122,7 @@ effects yet. But it's there so Bleed (tutorial 08) has a place to contribute
 `+stacks * 2` damage. The stages are declared once and shared across every
 damage resolution.
 
-### 4. Tough-skin — subscriber, not inline lambda
+### 4. Tough-skin — subscriber, targeted by context
 
 In tutorial 06, tough-skin was:
 
@@ -131,12 +130,16 @@ In tutorial 06, tough-skin was:
 damage.add("final", "tough-skin", [](int dmg) { return dmg - 1; });
 ```
 
-Now it's:
+It was baked into the player's damage chain and only affected strikes against
+the goblin. Now it's a subscriber that checks the target:
 
 ```cpp
 damageTopic().onChained(bus).subscribe(
-    [](const DamageAttempt& /*event*/,
+    [&goblin](const DamageAttempt& event,
        rpg::core::Chain<DamageAttempt>& chain) {
+      if (event.target != goblin.name) {
+        return rpg::core::Status::ok();
+      }
       mustBeOk(chain.add("final", "tough-skin", [](DamageAttempt data) {
         data.baseAmount = std::max(0, data.baseAmount - 1);
         return data;
@@ -145,10 +148,10 @@ damageTopic().onChained(bus).subscribe(
     });
 ```
 
-Same rule (reduce damage by 1), different mechanism. The subscriber is
-registered once in `main()` and contributes to every damage resolution
-automatically. The resolution function doesn't know about tough-skin — it
-just publishes and collects.
+Same rule (reduce damage by 1), same outcome (only the goblin has tough skin),
+but now the subscriber *reads the target* and decides whether to contribute.
+This is the key advantage over `Chain<int>`: subscribers can make targeted
+decisions based on who's being hit.
 
 ### 5. The resolution flow — publish, collect, execute
 
@@ -172,9 +175,10 @@ Three steps:
 
 Step 2 is the new piece. When `publish()` is called, every subscriber on
 `combat.damage` gets the `DamageAttempt` event and a reference to the chain.
-Each subscriber calls `chain.add()` to register its modifier. When `publish()`
-returns, the chain has all contributions. Then `execute()` folds through the
-stages and produces the receipt.
+Each subscriber decides whether to contribute — tough-skin checks `event.target`
+and only activates for the goblin. When `publish()` returns, the chain has all
+contributions. Then `execute()` folds through the stages and produces the
+receipt.
 
 ### 6. Block — still inline, but in the new shape
 
