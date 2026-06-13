@@ -14,10 +14,18 @@ clang/gcc + Windows MSVC. Released through v0.1.1.
 ## Active work
 
 - **Tutorial tracks** — two-path structure in `docs/tutorials/`:
-  - **Campaign** (03–09): game-building series, feature by feature
+  - **Campaign** (03–08, expanding): game-building series, feature by feature
   - **Workshop** (W01–W04): architecture deep-dives (Bus, Chains, Rage,
      Build Your Own Effect)
   - **Juice appendix**: optional terminal polish at any checkpoint
+- **Tutorial 06 redesign** — original "Statuses that Stick Around" (single
+  tutorial covering Bus + Topics + DamageAttempt + Effects) is being split
+  into three focused tutorials:
+  - 06: The Bus (publish/subscribe, turn events)
+  - 07: Rich Events (chained topics, DamageAttempt)
+  - 08: Effects (BleedEffect, autonomous lifecycle)
+  - Design spec: `docs/journey/2026-06-13-linear-tutorials-6-8.md`
+  - Old tutorials 07+ will renumber to 09+
 - **v0.2.0 — Effects as autonomous bus citizens** (tutorial 06). Tag once
   Effects own their lifecycle (subscribe/expire/remove) without the game
   loop orchestrating them.

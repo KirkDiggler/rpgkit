@@ -48,6 +48,13 @@ Settled in the design + plan. Implementers do not relitigate.
   link line only when a test first needs it. Reserve "mock" for generated/gmock
   doubles — name hand-written ones `fakeX`/`testX`.
 
+## Planning & Design
+
+- **Design specs** go in `docs/journey/` with date-prefixed names (`YYYY-MM-DD-topic.md`). They are living documents — update them in the PR that changes reality.
+- **No `docs/superpowers/`** — that was an artifact of a specific tool. Do not create it. Design thinking belongs in `docs/journey/`.
+- **Issue-first.** Every piece of work starts as a GitHub issue on the [rpgkit project board](https://github.com/users/KirkDiggler/projects/14). No branch without an issue.
+- **Tutorials** are planned as design specs first (`docs/journey/`), then broken into issues with clear deliverables and challenge lists.
+
 ## Docs
 
 Living docs: `docs/status.md`, `docs/quality.md`, `docs/architecture/`,
