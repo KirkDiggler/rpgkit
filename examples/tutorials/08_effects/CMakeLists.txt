@@ -1,0 +1,2 @@
+add_executable(tutorial_08_effects main.cpp)
+target_link_libraries(tutorial_08_effects PRIVATE rpg::core rpgkit_warnings)
