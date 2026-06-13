@@ -27,8 +27,8 @@ Hero: 20/20 HP, 0 block   Goblin: 30 HP
   out of energy.
 
 — Turn 1 complete —
-  Bleed deals 3 damage to Goblin
   Shields expire.
+  Bleed deals 3 damage to Goblin
 
 --- Goblin's turn (Goblin: 27 HP) ---
 ```

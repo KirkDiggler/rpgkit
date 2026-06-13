@@ -321,7 +321,7 @@ PhaseResult playerPhase(Fighter& hero, Fighter& goblin,
     energy -= card.cost;
     played.at(index) = true;
 
-    if (playCard(card, hero, goblin, activeEffects, bus) && goblin.hp <= 0) {
+    if (playCard(card, hero, goblin, activeEffects, bus)) {
       return PhaseResult::kGoblinDown;
     }
   }

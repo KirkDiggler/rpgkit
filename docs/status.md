@@ -18,10 +18,6 @@ split "Statuses that Stick Around" into three focused episodes (06: Bus,
 
 ## Active work
 
-- **Tutorial 08 — Effects** (#29): BleedEffect subscribes to `turn.ended`,
-  ticks damage, self-removes at zero. The game loop goes from orchestrator
-  to announcer. This is the v0.2.0 milestone — Effects own their lifecycle.
-  PR open, pending review.
 - **Tutorial tracks** — two-path structure in `docs/tutorials/`:
   - **Campaign** (03–08, expanding): game-building series, feature by feature
   - **Workshop** (W01–W04): architecture deep-dives (Bus, Chains, Rage,
@@ -33,8 +29,9 @@ split "Statuses that Stick Around" into three focused episodes (06: Bus,
 
 ## Completed (recent)
 
-- **Tutorial 08 — Effects** (in progress): BleedEffect, Rend card,
-  activeEffects list, announcer shift.
+- **Tutorial 08 — Effects**: BleedEffect, Rend card, activeEffects list,
+  announcer shift. The game loop publishes `turn.ended` and lets effects
+  respond — no effect-specific logic in the loop.
 - **Tutorial 07 — Rich Events** (v0.1.2): `DamageAttempt`, `ChainedTopic`,
   tough-skin and block as bus subscribers. Plumbing refactor — behavior
   identical to tutorial 06, but effects can now subscribe too.
