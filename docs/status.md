@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-06-13 (tutorial 06 — The Bus)_
+_Last updated: 2026-06-13 (v0.1.2 — Bus + ChainedTopic)_
 
 ## Current health
 
