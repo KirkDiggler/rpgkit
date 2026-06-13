@@ -146,9 +146,14 @@ int readChoice() {
 // incoming hits. Self-removes when stacks hit zero — no game loop code
 // manages its lifecycle.
 class BleedEffect : public rpg::core::Effect {
+  static std::string makeId(const std::string& target) {
+    static int nextId = 1;
+    return "bleed-" + target + "-" + std::to_string(nextId++);
+  }
+
  public:
   BleedEffect(Fighter& target, int stacks)
-      : Effect("bleed-" + target.name, "rend"), target_(target), stacks_(stacks) {}
+      : Effect(makeId(target.name), "rend"), target_(target), stacks_(stacks) {}
 
  protected:
   rpg::core::Status onApply(rpg::core::Bus& bus) override {
@@ -473,6 +478,9 @@ int main() {
     // the loop never manages any of it.
     ++turnNumber;
     mustBeOk(turnEndedTopic().on(bus).publish(turnNumber));
+
+    // Prune effects that self-removed during the tick.
+    std::erase_if(activeEffects, [](const auto& e) { return !e->isActive(); });
 
     // Bleed's tick may have killed the goblin.
     if (goblin.hp <= 0) {

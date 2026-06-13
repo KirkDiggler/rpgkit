@@ -25,19 +25,22 @@ Hero: 20/20 HP, 0 block   Goblin: 30 HP
   [0] end turn
 > 2
   Bleed applied to Goblin (3 stacks)
+  out of energy.
 
-  --- Goblin's turn (Goblin: 30 HP) ---
-  ... (goblin plays cards) ...
-
-Hero: 14/20 HP, 0 block   Goblin: 30 HP
   Bleed deals 3 damage to Goblin
-  Bleed faded
+
+  --- Goblin's turn (Goblin: 27 HP) ---
+  Goblin plays Claws (cost 0, 6 dmg)
+  Claws: 6 damage
+  (Goblin out of energy)
 ```
 
-Rend doesn't deal direct damage — it applies a status. Three turns later,
-Bleed ticks for 3, then 2, then 1, then fades. Each tick also makes any
-hit against the goblin hurt more. The game loop never once checked "is
-Bleed active?" — it just published `turn.ended` and let the Effect respond.
+Rend doesn't deal direct damage — it applies a status. At the end of your
+turn, the `turn.ended` topic fires and Bleed ticks: 3 damage to the goblin.
+Next turn, if your attacks hit the goblin while Bleed is up, each hit gets
++6 extra damage (3 stacks × 2 amp). Then another tick for 2, then 1, then
+the effect self-removes. The game loop never once checked "is Bleed active?"
+— it just published `turn.ended` and let the Effect respond.
 
 ## The architectural shift
 
