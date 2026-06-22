@@ -36,10 +36,22 @@ class Effect {
   [[nodiscard]] const std::string& source() const { return source_; }
   [[nodiscard]] bool isActive() const { return active_; }
 
-  [[nodiscard]] Status apply(Bus& bus) {
+  // Params structs (binding decision 9): new receipt fields become defaulted
+  // members instead of positional inserts, so the signature stays stable.
+  // remove takes a defaulted empty struct so the zero-arg call still compiles;
+  // #45 adds correlationId as a defaulted member.
+  // Reference members are intentional — the struct is a temporary that only
+  // outlives the function call it's passed to.
+  struct ApplyParams {
+    Bus& bus;  // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+  };
+  struct RemoveParams {};
+
+  [[nodiscard]] Status apply(ApplyParams params) {
     if (active_) {
       return Status::error("effect already active: " + id_);
     }
+    Bus& bus = params.bus;
     bus_ = &bus;
     tracked_.clear();
     Status applied = onApply(bus);
@@ -58,7 +70,7 @@ class Effect {
     return Status::ok();
   }
 
-  [[nodiscard]] Status remove() {
+  [[nodiscard]] Status remove(RemoveParams /*params*/ = {}) {
     if (!active_ || bus_ == nullptr) {
       return Status::error("effect not active: " + id_);
     }

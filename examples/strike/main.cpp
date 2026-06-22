@@ -79,9 +79,14 @@ class BleedEffect : public Effect {
   Status onApply(Bus& bus) override {
     track(damageTopic().onChained(bus).subscribe(
         [id = id()](const DamageEvent&, Chain<DamageEvent>& chain) {
-          return chain.add("effects", id, [](DamageEvent data) {
-            data.amount += kBleedBonus;
-            return data;
+          return chain.add({
+              .stage = "effects",
+              .id = id,
+              .modifier =
+                  [](DamageEvent data) {
+                    data.amount += kBleedBonus;
+                    return data;
+                  },
           });
         }));
     return Status::ok();
@@ -106,7 +111,9 @@ class StrikeAction : public Action<StrikeInput> {
     return Status::ok();
   }
 
-  [[nodiscard]] Status activate(const EntityRef& owner, const StrikeInput& input) override {
+  [[nodiscard]] Status activate(ActivateParams params) override {
+    const EntityRef& owner = params.owner;
+    const StrikeInput& input = params.input;
     Status gate = canActivate(owner, input);
     if (!gate.isOk()) {
       return gate;
@@ -149,16 +156,16 @@ int main() {
   StrikeAction strike(bus);
 
   std::cout << "-- no effects --\n";
-  mustBeOk(strike.activate(hero, StrikeInput{.target = goblin}));
+  mustBeOk(strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}}));
 
   std::cout << "\n-- bleed applied (the goblin bit back) --\n";
   BleedEffect bleed("spider-bite");
-  mustBeOk(bleed.apply(bus));
-  mustBeOk(strike.activate(hero, StrikeInput{.target = goblin}));
+  mustBeOk(bleed.apply({.bus = bus}));
+  mustBeOk(strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}}));
 
   std::cout << "\n-- bleed removed (the wound closed) --\n";
   mustBeOk(bleed.remove());
-  mustBeOk(strike.activate(hero, StrikeInput{.target = goblin}));
+  mustBeOk(strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}}));
 
   return 0;
 }

@@ -33,7 +33,9 @@ class fakeStrikeAction : public Action<StrikeInput> {
     return Status::ok();
   }
 
-  [[nodiscard]] Status activate(const EntityRef& owner, const StrikeInput& input) override {
+  [[nodiscard]] Status activate(ActivateParams params) override {
+    const EntityRef& owner = params.owner;
+    const StrikeInput& input = params.input;
     Status gate = canActivate(owner, input);
     if (!gate.isOk()) {
       return gate;
@@ -75,7 +77,9 @@ TEST(ActionTest, ActivateSpendsAndPublishes) {
   fakeStrikeAction strike(bus, 3);
   const EntityRef hero{.id = "hero-1", .type = "character"};
 
-  ASSERT_TRUE(strike.activate(hero, StrikeInput{.targetId = "goblin-7", .cost = 1}).isOk());
+  ASSERT_TRUE(
+      strike.activate({.owner = hero, .input = StrikeInput{.targetId = "goblin-7", .cost = 1}})
+          .isOk());
 
   EXPECT_EQ(struckTarget, "goblin-7");
   EXPECT_EQ(strike.energy(), 2);
@@ -92,7 +96,9 @@ TEST(ActionTest, GatedActivateChangesNothing) {
   fakeStrikeAction strike(bus, 0);
   const EntityRef hero{.id = "hero-1", .type = "character"};
 
-  EXPECT_FALSE(strike.activate(hero, StrikeInput{.targetId = "goblin", .cost = 1}).isOk());
+  EXPECT_FALSE(
+      strike.activate({.owner = hero, .input = StrikeInput{.targetId = "goblin", .cost = 1}})
+          .isOk());
   EXPECT_EQ(published, 0);
   EXPECT_EQ(strike.energy(), 0);
 }

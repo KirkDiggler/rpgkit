@@ -211,13 +211,20 @@ already holds.
 Three follow-up rpgkit issues, each verified back in rpgkit-ue:
 
 1. **Chain source metadata** — extend `Chain<T>::Step` with `source`, thread
-   it through `add`/`execute`. Verify in UE#9: the damage breakdown widget
-   names "Vulnerability" as the modifier source without a hardcoded string.
+   it through `add`/`execute`. The params-struct reshape (`AddParams`,
+   `ActivateParams`, `ApplyParams`, `RemoveParams`) landed in #47; this
+   slice only adds the `source` defaulted member and the `Step.source`
+   field. Verify in UE#9: the damage breakdown widget names "Vulnerability"
+   as the modifier source without a hardcoded string.
 2. **Action receipt** — `Action::activate` returns `(Status, ActionReceipt)`.
-   Verify in UE#15: a new action type produces HUD/log output from the
-   receipt, no GameMode branch added.
+   The `ActivateParams` struct already exists (#47); this slice adds the
+   `correlationId` defaulted member and changes the return type. Verify in
+   UE#15: a new action type produces HUD/log output from the receipt, no
+   GameMode branch added.
 3. **Effect receipt** — `Effect::apply`/`remove` return
-   `(Status, EffectReceipt)`. Verify in UE#14: apply/tick/expire display
+   `(Status, EffectReceipt)`. The `ApplyParams`/`RemoveParams` structs
+   already exist (#47); this slice adds `correlationId` defaulted members
+   and changes the return types. Verify in UE#14: apply/tick/expire display
    reads from receipts, not `effect.hpp` internals.
 
 No issue is opened for a sink, observer, or `StateChanged`. If a second host

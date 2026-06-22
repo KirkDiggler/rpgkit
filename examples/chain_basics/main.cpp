@@ -45,19 +45,26 @@ int main() {
   // Rage: flat +2 in "effects". The id ("rage") is stable and unique — it
   // powers dedup (can't rage twice), removal (rage ends -> pull it), and
   // names the line on the receipt.
-  mustBeOk(damage.add("effects", "rage", [](int dmg) { return dmg + 2; }));
+  mustBeOk(
+      damage.add({.stage = "effects", .id = "rage", .modifier = [](int dmg) { return dmg + 2; }}));
 
   // Bless: +1d4 in "effects". Captured rng lives as long as the lambda does;
   // the die rolls inside the modifier, so every execute() rolls fresh.
   std::mt19937 rng{std::random_device{}()};
-  mustBeOk(damage.add("effects", "bless", [&rng](int dmg) {
-    std::uniform_int_distribution<int> d4{1, 4};
-    return dmg + d4(rng);
+  mustBeOk(damage.add({
+      .stage = "effects",
+      .id = "bless",
+      .modifier =
+          [&rng](int dmg) {
+            std::uniform_int_distribution<int> d4{1, 4};
+            return dmg + d4(rng);
+          },
   }));
 
   // Vulnerable: x2 in "final" — added last here, but it would apply last even
   // if it had been added first. Stage order beats add order.
-  mustBeOk(damage.add("final", "vulnerable", [](int dmg) { return dmg * 2; }));
+  mustBeOk(damage.add(
+      {.stage = "final", .id = "vulnerable", .modifier = [](int dmg) { return dmg * 2; }}));
 
   // One sword swing: 5 base damage in, receipt out.
   const rpg::core::Chain<int>::Result result = damage.execute(5);

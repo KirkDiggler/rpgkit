@@ -39,7 +39,7 @@ int main() {
   std::cout << "=== Burning Effect Demo ===\n\n";
 
   Burning burn(3);
-  (void)burn.apply(bus);
+  (void)burn.apply({.bus = bus});
 
   constexpr int kMaxTurns = 5;
   for (int turn = 1; turn <= kMaxTurns; ++turn) {

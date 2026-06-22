@@ -116,8 +116,11 @@ int resolveHeal(const std::string& cardName, int baseHeal, const Fighter& target
   // Clamped to zero: if hp ever exceeds maxHp (an over-heal card, a max-HP
   // debuff), a negative room would turn healing into damage.
   const int room = std::max(0, target.maxHp - target.hp);
-  mustBeOk(
-      heal.add("cap", "max-hp-cap", [room](int amount) { return amount > room ? room : amount; }));
+  mustBeOk(heal.add({
+      .stage = "cap",
+      .id = "max-hp-cap",
+      .modifier = [room](int amount) { return amount > room ? room : amount; },
+  }));
   const rpg::core::Chain<int>::Result result = heal.execute(baseHeal);
   std::cout << "  " << cardName << ": " << baseHeal << " healing\n";
   for (const rpg::core::Chain<int>::Step& step : result.breakdown) {
@@ -131,7 +134,8 @@ int resolveHeal(const std::string& cardName, int baseHeal, const Fighter& target
 // a card instead of a constant. The goblin's tough-skin rule is unchanged.
 int cardDamage(const Card& card) {
   rpg::core::Chain<int> damage(std::vector<std::string>{"base", "final"});
-  mustBeOk(damage.add("final", "tough-skin", [](int dmg) { return dmg - 1; }));
+  mustBeOk(damage.add(
+      {.stage = "final", .id = "tough-skin", .modifier = [](int dmg) { return dmg - 1; }}));
   return resolveDamage(card.name, card.damage, damage);
 }
 
@@ -145,10 +149,15 @@ int cardDamage(const Card& card) {
 int goblinClaws(Fighter& hero) {
   rpg::core::Chain<int> damage(std::vector<std::string>{"base", "block"});
   if (hero.block > 0) {
-    mustBeOk(damage.add("block", "block-" + hero.name, [&hero](int dmg) {
-      const int absorbed = std::min(hero.block, dmg);
-      hero.block -= absorbed;
-      return dmg - absorbed;
+    mustBeOk(damage.add({
+        .stage = "block",
+        .id = "block-" + hero.name,
+        .modifier =
+            [&hero](int dmg) {
+              const int absorbed = std::min(hero.block, dmg);
+              hero.block -= absorbed;
+              return dmg - absorbed;
+            },
     }));
   }
   return resolveDamage("Claws", kClawsDamage, damage);

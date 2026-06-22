@@ -40,9 +40,18 @@ class Action {
   // The gate: cost, target validity, cooldown. Never mutates anything.
   [[nodiscard]] virtual Status canActivate(const EntityRef& owner, const TInput& input) = 0;
 
+  // Params struct (binding decision 9): new receipt fields become defaulted
+  // members instead of positional inserts, so the signature stays stable.
+  // Reference members are intentional — the struct is a temporary that only
+  // outlives the function call it's passed to.
+  struct ActivateParams {
+    const EntityRef& owner;  // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    const TInput& input;     // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+  };
+
   // The firing: spend the cost, publish events, apply effects. Implementations
   // re-check the gate first — callers may skip straight to activate.
-  [[nodiscard]] virtual Status activate(const EntityRef& owner, const TInput& input) = 0;
+  [[nodiscard]] virtual Status activate(ActivateParams params) = 0;
 
  private:
   std::string id_;

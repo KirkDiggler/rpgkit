@@ -108,10 +108,11 @@ TEST(ChainedTopicTest, PublishCollectsButNeverTransforms) {
 
   topic.subscribe([](const AttackEvent& event, Chain<AttackEvent>& chain) {
     // A "rage" effect: sees the attack, registers its contribution.
-    return chain.add("effects", "rage-" + event.attacker, [](AttackEvent data) {
-      data.amount += 2;
-      return data;
-    });
+    return chain.add(
+        {.stage = "effects", .id = "rage-" + event.attacker, .modifier = [](AttackEvent data) {
+           data.amount += 2;
+           return data;
+         }});
   });
 
   Chain<AttackEvent> chain(std::vector<std::string>{"base", "effects", "final"});

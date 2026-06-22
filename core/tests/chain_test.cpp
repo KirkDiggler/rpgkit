@@ -27,8 +27,11 @@ TEST(ChainTest, StageOrderBeatsAddOrder) {
   // Stage order rules: (5+2)*2 = 14. Rage and Vulnerable never coordinate;
   // the stage list composes them (design decision 5).
   Chain<int> chain(kStages());
-  ASSERT_TRUE(chain.add("final", "vulnerable", [](int v) { return v * 2; }).isOk());
-  ASSERT_TRUE(chain.add("effects", "rage", [](int v) { return v + 2; }).isOk());
+  ASSERT_TRUE(
+      chain.add({.stage = "final", .id = "vulnerable", .modifier = [](int v) { return v * 2; }})
+          .isOk());
+  ASSERT_TRUE(chain.add({.stage = "effects", .id = "rage", .modifier = [](int v) { return v + 2; }})
+                  .isOk());
 
   EXPECT_EQ(chain.execute(5).value, 14);
 }
@@ -36,8 +39,12 @@ TEST(ChainTest, StageOrderBeatsAddOrder) {
 TEST(ChainTest, WithinAStageInsertionOrderRules) {
   // Both in "effects": +3 then x2 -> (5+3)*2 = 16 (not 5*2+3 = 13).
   Chain<int> chain(kStages());
-  ASSERT_TRUE(chain.add("effects", "bless", [](int v) { return v + 3; }).isOk());
-  ASSERT_TRUE(chain.add("effects", "empower", [](int v) { return v * 2; }).isOk());
+  ASSERT_TRUE(
+      chain.add({.stage = "effects", .id = "bless", .modifier = [](int v) { return v + 3; }})
+          .isOk());
+  ASSERT_TRUE(
+      chain.add({.stage = "effects", .id = "empower", .modifier = [](int v) { return v * 2; }})
+          .isOk());
 
   EXPECT_EQ(chain.execute(5).value, 16);
 }
@@ -45,8 +52,11 @@ TEST(ChainTest, WithinAStageInsertionOrderRules) {
 TEST(ChainTest, BreakdownIsTheReceipt) {
   // The whole selling point: not just 14, but WHO did WHAT (decision 7).
   Chain<int> chain(kStages());
-  ASSERT_TRUE(chain.add("effects", "rage", [](int v) { return v + 2; }).isOk());
-  ASSERT_TRUE(chain.add("final", "vulnerable", [](int v) { return v * 2; }).isOk());
+  ASSERT_TRUE(chain.add({.stage = "effects", .id = "rage", .modifier = [](int v) { return v + 2; }})
+                  .isOk());
+  ASSERT_TRUE(
+      chain.add({.stage = "final", .id = "vulnerable", .modifier = [](int v) { return v * 2; }})
+          .isOk());
 
   const Chain<int>::Result result = chain.execute(5);
 
@@ -68,7 +78,11 @@ TEST(ChainTest, ModifiersReEvaluatePerExecute) {
   // it fresh.
   Chain<int> chain(kStages());
   int rolls = 0;
-  ASSERT_TRUE(chain.add("effects", "bless", [&rolls](int v) { return v + (++rolls); }).isOk());
+  ASSERT_TRUE(chain
+                  .add({.stage = "effects",
+                        .id = "bless",
+                        .modifier = [&rolls](int v) { return v + (++rolls); }})
+                  .isOk());
 
   EXPECT_EQ(chain.execute(10).value, 11);  // first "roll": +1
   EXPECT_EQ(chain.execute(10).value, 12);  // same chain, fresh evaluation: +2
@@ -77,22 +91,27 @@ TEST(ChainTest, ModifiersReEvaluatePerExecute) {
 TEST(ChainTest, DuplicateIdIsRejected) {
   // Ids power dedup: raging twice must not stack (decision 7).
   Chain<int> chain(kStages());
-  ASSERT_TRUE(chain.add("effects", "rage-barb-1", [](int v) { return v + 2; }).isOk());
+  ASSERT_TRUE(
+      chain.add({.stage = "effects", .id = "rage-barb-1", .modifier = [](int v) { return v + 2; }})
+          .isOk());
 
-  const Status dup = chain.add("effects", "rage-barb-1", [](int v) { return v + 2; });
+  const Status dup =
+      chain.add({.stage = "effects", .id = "rage-barb-1", .modifier = [](int v) { return v + 2; }});
   EXPECT_FALSE(dup.isOk());
   EXPECT_EQ(chain.execute(0).value, 2);  // still applied exactly once
 }
 
 TEST(ChainTest, UnknownStageIsRejected) {
   Chain<int> chain(kStages());
-  EXPECT_FALSE(chain.add("equipment", "ring", [](int v) { return v; }).isOk());
+  EXPECT_FALSE(
+      chain.add({.stage = "equipment", .id = "ring", .modifier = [](int v) { return v; }}).isOk());
 }
 
 TEST(ChainTest, RemovePullsTheModifier) {
   // Effect ends -> its modifier leaves the chain (decision 7).
   Chain<int> chain(kStages());
-  ASSERT_TRUE(chain.add("effects", "rage", [](int v) { return v + 2; }).isOk());
+  ASSERT_TRUE(chain.add({.stage = "effects", .id = "rage", .modifier = [](int v) { return v + 2; }})
+                  .isOk());
   ASSERT_TRUE(chain.remove("rage").isOk());
 
   EXPECT_EQ(chain.execute(5).value, 5);
@@ -108,13 +127,15 @@ TEST(ChainTest, WorksWithStructEventData) {
   };
   Chain<Damage> chain(kStages());
   ASSERT_TRUE(chain
-                  .add("final", "crit",
-                       [](Damage d) {
-                         if (d.critical) {
-                           d.amount *= 2;
-                         }
-                         return d;
-                       })
+                  .add({.stage = "final",
+                        .id = "crit",
+                        .modifier =
+                            [](Damage d) {
+                              if (d.critical) {
+                                d.amount *= 2;
+                              }
+                              return d;
+                            }})
                   .isOk());
 
   const Chain<Damage>::Result result = chain.execute(Damage{.amount = 7, .critical = true});

@@ -151,15 +151,13 @@ One rpgkit issue, verified back in rpgkit-ue:
        member).
      - New `chain_test.cpp` case: two modifiers with the same `id` from
        different sources still reject (dedup is by `id`, not `source`).
-     - Existing `chain_test.cpp` cases and every `chain.add(...)` call site
-       across `examples/` and `tests/` move to designated initializers in
-       this slice (e.g. `chain.add({.stage=..., .id=..., .modifier=...})`).
-       The signature is `add(AddParams)` — the positional form no longer
-       compiles. This is a one-time sweep; later receipt-field additions
-       do not reshuffle call sites.
-     - `strike_integration_test.cpp` updated to pass `effect.source()` from
-       the bleed subscriber; assertion that the breakdown step's `source`
-       matches the effect's source.
+      - Existing `chain_test.cpp` cases and every `chain.add(...)` call site
+        across `examples/` and `tests/` already use designated initializers
+        (the params-struct reshape landed in #47). This slice only adds
+        `.source = ...` to the call sites that have one.
+      - `strike_integration_test.cpp` updated to pass `effect.source()` from
+        the bleed subscriber; assertion that the breakdown step's `source`
+        matches the effect's source.
    - Verification in rpgkit-ue#9: the damage breakdown widget renders
      "Vulnerability" as the modifier source by reading `Step.source` and
      joining on it — no per-card hardcoded string, no GameMode branch.
