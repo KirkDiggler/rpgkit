@@ -106,10 +106,15 @@ struct ActionReceipt {
 ```
 
 `correlationId` is **caller-supplied**, not core-generated. The host sets it
-when it kicks an action (e.g. from the card-play or enemy-intent entry point);
-core echoes it on every receipt produced under that action so the host can
-reconstruct `action → topic → chain → effect → state` without a global id.
-Core never allocates ids, never tracks them across calls.
+when it kicks an action (e.g. from the card-play or enemy-intent entry point)
+and **passes the same id explicitly to every core operation it wants
+correlated** — the `activate` call, the `publish` whose chain it wants
+explained, the `Effect::apply` the action triggered. Core only copies the id
+it is handed onto that operation's receipt; it never propagates an id across
+operations on its own. The host reconstructs
+`action → topic → chain → effect → state` from the receipts it holds, all
+tagged with the id it chose. Core never allocates ids, never tracks them
+across calls, and has no thread-local "current action" context.
 
 ### 3. `Effect::apply`/`remove` returns a receipt (UE#14)
 
@@ -129,9 +134,12 @@ re-reading `effect.hpp`.
 ## Correlation model
 
 - **No global correlation id generator in core.** The host supplies an opaque
-  string at action-invocation time; core threads it onto receipts produced by
-  that action (the action receipt, chain receipts the action's publish
-  triggers, effect receipts the action's activate causes).
+  string at action-invocation time and **passes the same id explicitly to each
+  core operation it wants correlated** — the `activate` call, any `publish`
+  whose chain it wants explained, any `Effect::apply`/`remove` the action
+  triggered. Core copies the id onto the receipt of the operation it was
+  handed; it does not propagate an id across operations, has no registry, and
+  no thread-local "current action" context.
 - Core does **not** correlate across actions. "This tick of Bleed came from
   the card that applied it three turns ago" is a host reconstruction job —
   the host has the apply receipt with the correlation id it set; the tick is a
