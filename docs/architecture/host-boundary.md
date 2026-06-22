@@ -8,8 +8,9 @@ It exists to keep rpgkit portable. Project 15 — the
 [RPGKit Unreal Workshop](https://github.com/users/KirkDiggler/projects/15) board
 — is the current customer surface, and `rpgkit-ue` is the adapter that proves
 which seams a real engine integration actually needs. The rule is not "core is
-minimal" and not "core is generous"; it is **core earns a seam only when a
-host friction is concrete and repeatable across more than one host**.
+minimal" and not "core is generous"; it is **core earns a seam only when host
+friction is concrete, portable, and repeatable** — see the three-part
+promotion rule below.
 
 ## The default split
 
@@ -33,13 +34,13 @@ seams Project 15 has put pressure on so far and where each one sits today.
 
 | Surface | rpgkit owns | host owns by default | proven by |
 |---|---|---|---|
-| **Targeting** | The authored target-rule *vocabulary* a host maps to ("self", "enemy", "all enemies", "random"). No UI, no actor queries. | Actor queries, selection UI, resolving a rule to concrete actors, multi-actor encounters. | rpgkit-ue#11 |
-| **Encounter loop** | Nothing yet. Turn order, win/loss, and encounter lifecycle are host policy. | Start/stop encounter, turn advancement, win/loss detection, enemy intent scheduling. | rpgkit-ue#13 |
-| **Authored assets** | The portable *shape* of action/effect data the host feeds into `Action`/`Effect` construction. No asset format, no editor integration. | Data tables, asset types, editor authoring UX, importing authored data into rpgkit objects. | rpgkit-ue#11, #15, #18 |
-| **Presentation / UI** | The **breakdown** returned by `Chain<T>::execute` and any future structured observation surface (see rpgkit#34). No HUD, no widgets, no rendering. | HUD, combat log, damage breakdown widget, effect tick/expire visuals, animation. | rpgkit-ue#8, #9, #14 |
+| **Targeting** | The authored target-rule *vocabulary* a host maps to ("self", "enemy", "all enemies", "random"). No UI, no actor queries. | Actor queries, selection UI, resolving a rule to concrete actors, multi-actor encounters. | KirkDiggler/rpgkit-ue#11 |
+| **Encounter loop** | Nothing yet. Turn order, win/loss, and encounter lifecycle are host policy. | Start/stop encounter, turn advancement, win/loss detection, enemy intent scheduling. | KirkDiggler/rpgkit-ue#13 |
+| **Authored assets** | The portable *shape* of action/effect data the host feeds into `Action`/`Effect` construction. No asset format, no editor integration. | Data tables, asset types, editor authoring UX, importing authored data into rpgkit objects. | KirkDiggler/rpgkit-ue#11, #15, #18 |
+| **Presentation / UI** | The **breakdown** returned by `Chain<T>::execute` and any future structured observation surface (see KirkDiggler/rpgkit#34). No HUD, no widgets, no rendering. | HUD, combat log, damage breakdown widget, effect tick/expire visuals, animation. | KirkDiggler/rpgkit-ue#8, #9, #14 |
 | **Persistence** | Nothing yet. Save/load is host-owned until a portable serialization shape is proven. | Save/load format, slot management, restoring rpgkit objects from host-authored blobs. | (no current pressure) |
-| **State mutation** | The **topics** effects subscribe to and the **typed request seam** a host routes mutations through so effects/logs/tools can observe them. No HP, no block, no game state types. | Game state structs, HP/block fields, when to apply a request, validation beyond `Action::canActivate`. | rpgkit-ue#16, #18 |
-| **Observations** | A *minimum* portable vocabulary + correlation model for what rpgkit did internally (action → topic → chain → effect → state). Design pending in rpgkit#34. No logging, no formatting, no engine sinks. | Wiring observations into UE logs, HUD, debug tools; choosing which host-owned events to also emit. | rpgkit-ue#8, #14, #15, #16 |
+| **State mutation** | The **topics** effects subscribe to and the **typed request seam** a host routes mutations through so effects/logs/tools can observe them. No HP, no block, no game state types. | Game state structs, HP/block fields, when to apply a request, validation beyond `Action::canActivate`. | KirkDiggler/rpgkit-ue#16, #18 |
+| **Observations** | A *minimum* portable vocabulary + correlation model for what rpgkit did internally (action → topic → chain → effect → state). Design pending in KirkDiggler/rpgkit#34. No logging, no formatting, no engine sinks. | Wiring observations into UE logs, HUD, debug tools; choosing which host-owned events to also emit. | KirkDiggler/rpgkit-ue#8, #14, #15, #16 |
 
 "Nothing yet" is a deliberate answer, not a gap. It means the host owns it
 until Project 15 (or a second host) proves the same friction twice.
@@ -59,7 +60,8 @@ A discovered need becomes rpgkit work only when **all three** are true:
 
 When the rule fires, the new rpgkit issue must cite:
 
-- the **rpgkit-ue use case** that proved the need, and
+- the **rpgkit-ue use case** that proved the need (fully qualified:
+  `KirkDiggler/rpgkit-ue#N`), and
 - the **boundary row** above it falls under (or a proposed new row if it's a
   new surface).
 
