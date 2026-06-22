@@ -116,8 +116,11 @@ Call sites use designated initializers; callers that don't correlate omit
 `correlationId`:
 
 ```cpp
+// no correlation — host just wants the receipt
 auto [st, receipt] = action->activate({.owner = goblin, .input = strikeInput});
-auto [st, receipt] = action->activate(
+
+// host correlates this activation with the card play that caused it
+auto [st2, correlated] = action->activate(
     {.owner = goblin, .input = strikeInput, .correlationId = "card-play-7"});
 ```
 
@@ -160,8 +163,8 @@ std::pair<Status, EffectReceipt> remove(RemoveParams params = {});
 Call sites:
 
 ```cpp
-auto [applied, receipt] = effect->apply({.bus = bus});
-auto [removed, receipt] = effect->remove({.correlationId = "card-play-7"});
+auto [applied, applyReceipt] = effect->apply({.bus = bus});
+auto [removed, removeReceipt] = effect->remove({.correlationId = "card-play-7"});
 ```
 
 The host gets "Bleed applied by card Strike-1, subscribed to turn.ended" as
@@ -221,16 +224,16 @@ No issue is opened for a sink, observer, or `StateChanged`. If a second host
 (Unity via C ABI) later needs the same receipts, that confirms the shape; if
 it needs a sink, that's a new design note, not an extension of this one.
 
-## Open questions for review
+## Resolved questions
 
-- Is `(Status, Receipt)` the right return shape, or should core introduce a
-  `StatusOr<T>` (Go-style: never success-with-empty-value)? The latter would
-  tidy the three return sites but is a separate binding decision.
-- Should `correlationId` be `std::string` or an opaque `CorrelationId` wrapper
-  (matching `SubscriptionId`'s wrapped-handle style)? String is simpler and
-  host-friendly; a wrapper reserves room for a future non-string id without
-  baking one in now.
+Both were implementation-slice questions, not design-note blockers. They are
+answered in the [chain receipt source metadata note](./2026-06-21-chain-receipt-source-metadata.md#answers-to-the-34-open-questions)
+and applied consistently across slices 1-3:
 
-Both are implementation-slice questions, not design-note blockers. They get
-answered in the first follow-up issue (Chain source metadata) and applied
-consistently.
+1. **`(Status, Receipt)` vs `StatusOr<T>`.** `(Status, Receipt)` — `Status`
+   first to match the existing `activate`/`apply`/`remove` signatures, receipt
+   populated even on failure so the host can log "action X failed at gate Y"
+   with X's identity. No `StatusOr<T>` template is introduced.
+2. **`correlationId` as `std::string` vs opaque wrapper.** `std::string` —
+   caller-supplied and host-defined; serializes, logs, and compares trivially.
+   If a second host needs a non-string id, that's a new design note.

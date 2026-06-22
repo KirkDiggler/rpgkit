@@ -151,7 +151,7 @@ One rpgkit issue, verified back in rpgkit-ue:
        member).
      - New `chain_test.cpp` case: two modifiers with the same `id` from
        different sources still reject (dedup is by `id`, not `source`).
-     - Existing `chain_test.cpp` cases and ~21 `chain.add(...)` call sites
+     - Existing `chain_test.cpp` cases and every `chain.add(...)` call site
        across `examples/` and `tests/` move to designated initializers in
        this slice (e.g. `chain.add({.stage=..., .id=..., .modifier=...})`).
        The signature is `add(AddParams)` — the positional form no longer
