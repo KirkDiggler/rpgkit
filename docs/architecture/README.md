@@ -24,7 +24,8 @@ Host integrations are customers, not special cases. `rpgkit-ue` is the current
 use-case surface for proving what a real engine adapter needs. Unreal owns
 authoring assets, targeting UI, encounter orchestration, presentation, and
 persistence; `rpgkit` owns only portable combat contracts and seams proven useful
-by those workflows.
+by those workflows. The per-surface split and the promotion rule from host
+friction to a rpgkit issue live in [`host-boundary.md`](./host-boundary.md).
 
 ## The four contracts
 
