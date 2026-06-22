@@ -149,8 +149,8 @@ One rpgkit issue, verified back in rpgkit-ue:
      - New `chain_test.cpp` case: `add` with a `source` populates
        `Step.source`; `add` without keeps `Step.source == ""` (defaulted
        member).
-     - New `chain_test.cpp` case: two modifiers with the same `id` from
-       different sources still reject (dedup is by `id`, not `source`).
+      - New `chain_test.cpp` case: two modifiers with the same `id` from
+        different sources still reject (dedup is by `id`, not `source`).
       - Existing `chain_test.cpp` cases and every `chain.add(...)` call site
         across `examples/` and `tests/` already use designated initializers
         (the params-struct reshape landed in #47). This slice only adds
