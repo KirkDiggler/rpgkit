@@ -30,6 +30,7 @@ Settled in the design + plan. Implementers do not relitigate.
 | 6 | **The breakdown is in scope for v1.** `Chain<T>::execute` returns the folded value *and* per-modifier records. |
 | 7 | **Naming:** types `PascalCase`, methods `lowerCamelCase`, headers `snake_case.hpp` under `include/rpg/core/`. Notification-vs-chained lives in the type (`Topic<T>` vs `ChainedTopic<T>`), both with plain `subscribe`/`publish`. |
 | 8 | **Synchronous, ordered, fail-fast delivery.** Publish walks subscribers in insertion order, returns the first error. |
+| 9 | **Params-struct signatures for multi-field operations.** `Chain::add`, `Action::activate`, `Effect::apply`, `Effect::remove` take a single `OpParams`-style struct (`AddParams`, `ActivateParams`, `ApplyParams`, `RemoveParams`) and are called with C++20 designated initializers. New receipt fields are defaulted struct members, not positional inserts — the signature never reshapes and call sites that don't name the new field still compile. Per-operation structs, not a generic union (matches decision 6's per-operation receipts). Single-argument operations (`Chain::remove`, `Action::canActivate`) stay positional until they grow a second field. |
 
 ## Workflow
 

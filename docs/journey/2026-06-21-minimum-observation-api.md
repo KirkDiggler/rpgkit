@@ -93,16 +93,32 @@ chain) knows its `source` and passes it. Core just carries it through.
 
 ### 2. `Action::activate` returns a receipt (UE#15)
 
+`activate` moves to a params struct (binding decision 9) so the signature
+stays stable as later fields land:
+
 ```cpp
+struct ActivateParams {
+  const EntityRef& owner;
+  const TInput& input;
+  std::string correlationId = "";  // caller-supplied; defaulted member
+};
 struct ActionReceipt {
   std::string id;            // action id
   std::string type;          // action type
-  std::string correlationId; // caller-supplied; "" if unused
-  // Status stays in the return: see below.
+  std::string correlationId; // echoed from ActivateParams
 };
-// activate returns StatusOr<ActionReceipt> — or, matching core's no-exception
-// style, a pair (Status, ActionReceipt) where the receipt is populated even
-// on failure so the host can log "action X failed at gate Y".
+// activate returns (Status, ActionReceipt) — receipt populated even on
+// failure so the host can log "action X failed at gate Y" with X's identity.
+std::pair<Status, ActionReceipt> activate(ActivateParams params);
+```
+
+Call sites use designated initializers; callers that don't correlate omit
+`correlationId`:
+
+```cpp
+auto [st, receipt] = action->activate({.owner = goblin, .input = strikeInput});
+auto [st, receipt] = action->activate(
+    {.owner = goblin, .input = strikeInput, .correlationId = "card-play-7"});
 ```
 
 `correlationId` is **caller-supplied**, not core-generated. The host sets it
@@ -118,18 +134,38 @@ across calls, and has no thread-local "current action" context.
 
 ### 3. `Effect::apply`/`remove` returns a receipt (UE#14)
 
+Both move to params structs (binding decision 9). `apply` keeps its `Bus&`
+argument as a struct field; `remove` gains a struct solely because
+`correlationId` is coming and a zero-arg method can't grow a parameter
+without reshaping its signature:
+
 ```cpp
+struct ApplyParams {
+  Bus& bus;
+  std::string correlationId = "";
+};
+struct RemoveParams {
+  std::string correlationId = "";
+};
 struct EffectReceipt {
   std::string id;            // effect id
   std::string source;        // effect source
   std::vector<SubscriptionId> subscriptions;  // what was tracked
-  std::string correlationId; // caller-supplied; "" if unused
+  std::string correlationId; // echoed from ApplyParams/RemoveParams
 };
+std::pair<Status, EffectReceipt> apply(ApplyParams params);
+std::pair<Status, EffectReceipt> remove(RemoveParams params = {});
 ```
 
-Apply/Remove each return `(Status, EffectReceipt)`. The host gets "Bleed
-applied by card Strike-1, subscribed to turn.ended" as a fact, not by
-re-reading `effect.hpp`.
+Call sites:
+
+```cpp
+auto [applied, receipt] = effect->apply({.bus = bus});
+auto [removed, receipt] = effect->remove({.correlationId = "card-play-7"});
+```
+
+The host gets "Bleed applied by card Strike-1, subscribed to turn.ended" as
+a fact, not by re-reading `effect.hpp`.
 
 ## Correlation model
 
