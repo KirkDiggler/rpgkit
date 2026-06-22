@@ -27,6 +27,32 @@ split "Statuses that Stick Around" into three focused episodes (06: Bus,
     cookbook; findings become doc/API issues. Design:
     [rpg-project/ideas/rpgkit-demo-game](https://github.com/KirkDiggler/rpg-project/tree/main/ideas/rpgkit-demo-game)
 
+## Customer pressure from rpgkit-ue
+
+Project 15 is the customer/use-case surface for the Unreal integration. Its
+capability slices are developer goals; `rpgkit` work should be promoted from
+those slices only when `rpgkit-ue` exposes concrete friction, a missing portable
+seam, or a documentation gap.
+
+Current pressure clusters:
+
+- **Observability** — structured facts for action start, topic publish,
+  subscriber invocation, modifier addition, chain execution, effect lifecycle,
+  and state changes.
+- **Chain receipts** — source metadata, stable modifier identity, human labels,
+  and formatting guidance so hosts can explain why a result changed.
+- **Effect lifecycle** — ergonomic patterns for host-created runtime effects,
+  subscription ownership, apply/remove visibility, and safe cleanup.
+- **Action context** — portable guidance for actor/source/target/action identity
+  and lifecycle observations across cards, enemy intents, items, and abilities.
+- **Host adapter boundaries** — documentation that separates RPG concepts owned
+  by `rpgkit` from Unreal-owned authoring, targeting, encounter orchestration,
+  UI, and persistence.
+
+Promotion rule: do not create speculative core extensibility work. A future
+`rpgkit` issue should cite the `rpgkit-ue` use case that proved the need and
+describe how the result will be verified back in the Unreal integration.
+
 ## Completed (recent)
 
 - **Tutorial 08 — Effects**: BleedEffect, Rend card, activeEffects list,

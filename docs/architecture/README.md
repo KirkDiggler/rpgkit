@@ -20,6 +20,12 @@ The boundary: **core is system-agnostic**. It never knows what "rage" or "bleed"
 means — D&D 5e and an Across-the-Obelisk-style deck-builder are *rulebooks* layered
 on top of the same four contracts.
 
+Host integrations are customers, not special cases. `rpgkit-ue` is the current
+use-case surface for proving what a real engine adapter needs. Unreal owns
+authoring assets, targeting UI, encounter orchestration, presentation, and
+persistence; `rpgkit` owns only portable combat contracts and seams proven useful
+by those workflows.
+
 ## The four contracts
 
 - **Bus** — routes events by string topic id over a type-erased payload.
