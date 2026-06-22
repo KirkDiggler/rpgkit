@@ -29,13 +29,26 @@ are equivalent action sources; the guidance must not bias toward cards.
 
 ## What `Action<TInput>` owns today
 
+From `core/include/rpg/core/action.hpp` (summarized; see the header for the
+real contract):
+
 ```cpp
 template <typename TInput>
 class Action {
-  std::string id_;      // "strike-1", "vulnerable-apply"
-  std::string type_;    // "strike", "apply-status"
-  Status canActivate(const EntityRef& owner, const TInput& input);
-  Status activate(const EntityRef& owner, const TInput& input);
+ public:
+  Action(std::string id, std::string type);
+  virtual ~Action() = default;
+
+  // Identity — copies and moves deleted: an action is not a value.
+  [[nodiscard]] const std::string& id() const;    // "strike-1"
+  [[nodiscard]] const std::string& type() const;  // "strike"
+
+  // The gate (cost, target validity, cooldown). Never mutates.
+  [[nodiscard]] virtual Status canActivate(const EntityRef& owner,
+                                           const TInput& input) = 0;
+  // The firing (spend, publish, apply). Re-checks the gate first.
+  [[nodiscard]] virtual Status activate(const EntityRef& owner,
+                                        const TInput& input) = 0;
 };
 ```
 

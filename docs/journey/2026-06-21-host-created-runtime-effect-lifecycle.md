@@ -72,19 +72,24 @@ runtime behavior. The pattern, matching `examples/strike/main.cpp:74` and
 class VulnerableEffect : public rpg::core::Effect {
  public:
   // Constructor takes the authored values the host extracted from the spec.
-  VulnerableEffect(std::string source, int multiplier, std::string targetId)
-      : Effect("vulnerable-" + targetId, std::move(source)),
-        multiplier_(multiplier), targetId_(std::move(targetId)) {}
+  VulnerableEffect(std::string source, int multiplier, EntityRef target)
+      : Effect("vulnerable-" + std::to_string(target.value),
+               std::move(source)),
+        multiplier_(multiplier), target_(target) {}
 
  protected:
   Status onApply(Bus& bus) override {
     // Subscribe to the chained topic this effect modifies; track() every
     // subscription so remove() cleans them all up.
     track(damageTopic().onChained(bus).subscribe(
-        [id = id(), source = source(), mult = multiplier_](
+        [id = id(), mult = multiplier_, target = target_](
             const DamageEvent& evt, Chain<DamageEvent>& chain) {
-          if (evt.target == targetId_) {
-            return chain.add("final", id, source, [mult](DamageEvent d) {
+          if (evt.target == target) {
+            // NOTE: Chain::add today is (stage, id, modifier). Slice 1
+            // (rpgkit#35) adds a `source` parameter between id and modifier;
+            // this call gains `source()` then. Today, the source lives on
+            // the Effect, not on the Step — the host joins on id.
+            return chain.add("final", id, [mult](DamageEvent d) {
               d.amount *= mult;
               return d;
             });
@@ -96,39 +101,60 @@ class VulnerableEffect : public rpg::core::Effect {
 
  private:
   int multiplier_;
-  std::string targetId_;
+  EntityRef target_;
 };
 ```
+
+`DamageEvent` here matches `core/tests/strike_integration_test.cpp:21` —
+`target` is an `EntityRef`, and the modifier transforms the struct by value.
+The id includes the target's opaque value so per-target dedup works.
 
 Two things to notice, both already core-owned and already in the examples:
 
 - **`track()` makes cleanup automatic.** `remove()` unsubscribes everything
   `track()` recorded — the wrong-bus and forgotten-subscription bugs are
   unrepresentable. The host does not write its own unsubscribe loop.
-- **`id` includes the target.** `"vulnerable-goblin-1"` dedupes correctly:
-  applying Vulnerable to the same target twice doesn't stack (rejected by
-  `Chain::add`'s duplicate-id check), and two different targets get two
-  different effects. The id scheme is the subclass's job — core only
-  guarantees dedup is by `id`.
+- **`id` includes the target.** `"vulnerable-<target-value>"` makes
+  per-target effects distinct: two different targets get two different
+  effects with no id collision. The id scheme is the subclass's job — core
+  only guarantees dedup is by `id`.
+- **Duplicate-id is a guardrail, not a stacking policy.** If the same effect
+  re-applies to the same target and the id collides, `Chain::add` returns
+  `Status::error("duplicate modifier id: ...")` — which fails the publish
+  path. That's intentional: accidental double-application surfaces as an
+  error instead of silent stacking. **Re-apply and stacking policy
+  (refresh duration vs add stacks vs reject) is the host registry's job** —
+  the host checks its `(target, effect-id)` registry before constructing a
+  second instance and decides what "re-apply" means for that game.
 
 ### 3. Apply, observe, remove
 
-The host's action code does three things, in order:
+The host's action code does three things, in order. **Today** (apply/remove
+return `Status` only):
 
 ```cpp
-auto effect = std::make_unique<VulnerableEffect>(cardId, mult, targetId);
-auto [applied, receipt] = effect->apply(bus);   // (Status, EffectReceipt)*
+auto effect = std::make_unique<VulnerableEffect>(cardId, mult, target);
+Status applied = effect->apply(bus);
 if (!applied.isOk()) { /* log, undo, etc. */ }
-hostEffectRegistry.add(targetId, std::move(effect), receipt);  // host owns lifetime
+hostEffectRegistry.add(target, std::move(effect));  // host owns lifetime
 // ...later, when duration expires or the encounter ends:
-auto& effect = hostEffectRegistry.lookup(targetId, "vulnerable");
-auto [removed, removeReceipt] = effect.remove();
-hostEffectRegistry.remove(targetId, "vulnerable", removeReceipt);
+auto& effect = hostEffectRegistry.lookup(target, "vulnerable");
+Status removed = effect.remove();
+if (!removed.isOk()) { /* log */ }
+hostEffectRegistry.remove(target, "vulnerable");
 ```
 
-\* Today `apply`/`remove` return only `Status`. The `(Status, EffectReceipt)`
-shape is implementation slice 3 from the observation API note; the host
-follows the same pattern now, just ignoring the missing receipt.
+**After slice 3** (`EffectReceipt`, per the
+[observation API note](./2026-06-21-minimum-observation-api.md)), the same
+code gains the receipt alongside the status — the pattern doesn't change,
+only where the host reads lifecycle facts:
+
+```cpp
+auto [applied, receipt] = effect->apply(bus);   // (Status, EffectReceipt)
+// host routes `receipt` to its sinks (HUD, log, debug)
+// ...later:
+auto [removed, removeReceipt] = effect.remove();
+```
 
 The host owns the **registry** — the map from `(target, effect-id)` to the
 runtime instance. Core does not track "which effects are active on which
