@@ -35,6 +35,7 @@
 namespace {
 
 using rpg::core::Action;
+using rpg::core::ActionReceipt;
 using rpg::core::Bus;
 using rpg::core::Chain;
 using rpg::core::Effect;
@@ -111,12 +112,14 @@ class StrikeAction : public Action<StrikeInput> {
     return Status::ok();
   }
 
-  [[nodiscard]] Status activate(ActivateParams params) override {
+  [[nodiscard]] std::pair<Status, ActionReceipt> activate(ActivateParams params) override {
     const EntityRef& owner = params.owner;
     const StrikeInput& input = params.input;
+    ActionReceipt receipt{
+        .id = id(), .type = type(), .correlationId = std::move(params.correlationId)};
     Status gate = canActivate(owner, input);
     if (!gate.isOk()) {
-      return gate;
+      return {gate, std::move(receipt)};
     }
 
     // One resolution = one fresh chain (design decision 6).
@@ -126,7 +129,7 @@ class StrikeAction : public Action<StrikeInput> {
     // Publish COLLECTS contributions from whatever effects are listening...
     Status collected = damageTopic().onChained(*bus_).publish(swing, chain);
     if (!collected.isOk()) {
-      return collected;
+      return {collected, std::move(receipt)};
     }
 
     // ...and execute APPLIES them, yielding the receipt.
@@ -139,7 +142,7 @@ class StrikeAction : public Action<StrikeInput> {
                 << step.after.amount << '\n';
     }
     std::cout << "  total: " << result.value.amount << " damage\n";
-    return Status::ok();
+    return {Status::ok(), std::move(receipt)};
   }
 
  private:
@@ -156,16 +159,32 @@ int main() {
   StrikeAction strike(bus);
 
   std::cout << "-- no effects --\n";
-  mustBeOk(strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}}));
+  {
+    auto [status, receipt] =
+        strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}});
+    mustBeOk(status);
+    std::cout << "  receipt: " << receipt.id << " (" << receipt.type << ")\n";
+  }
 
   std::cout << "\n-- bleed applied (the goblin bit back) --\n";
   BleedEffect bleed("spider-bite");
   mustBeOk(bleed.apply({.bus = bus}));
-  mustBeOk(strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}}));
+  {
+    auto [status, receipt] = strike.activate(
+        {.owner = hero, .input = StrikeInput{.target = goblin}, .correlationId = "card-play-1"});
+    mustBeOk(status);
+    std::cout << "  receipt: " << receipt.id << " (" << receipt.type
+              << ", correlation: " << receipt.correlationId << ")\n";
+  }
 
   std::cout << "\n-- bleed removed (the wound closed) --\n";
   mustBeOk(bleed.remove());
-  mustBeOk(strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}}));
+  {
+    auto [status, receipt] =
+        strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}});
+    mustBeOk(status);
+    std::cout << "  receipt: " << receipt.id << " (" << receipt.type << ")\n";
+  }
 
   return 0;
 }
