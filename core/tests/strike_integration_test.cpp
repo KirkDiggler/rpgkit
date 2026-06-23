@@ -37,10 +37,10 @@ class testBleedEffect : public Effect {
   Status onApply(Bus& bus) override {
     track(damageTopic().onChained(bus).subscribe(
         [id = id()](const DamageEvent&, Chain<DamageEvent>& chain) {
-          return chain.add("effects", id, [](DamageEvent data) {
-            data.amount += 2;
-            return data;
-          });
+          return chain.add({.stage = "effects", .id = id, .modifier = [](DamageEvent data) {
+                              data.amount += 2;
+                              return data;
+                            }});
         }));
     return Status::ok();
   }
@@ -62,7 +62,9 @@ class testStrikeAction : public Action<StrikeInput> {
     return Status::ok();
   }
 
-  [[nodiscard]] Status activate(const EntityRef& owner, const StrikeInput& input) override {
+  [[nodiscard]] Status activate(ActivateParams params) override {
+    const EntityRef& owner = params.owner;
+    const StrikeInput& input = params.input;
     Chain<DamageEvent> chain(std::vector<std::string>{"base", "effects", "final"});
     const DamageEvent swing{.attacker = owner, .target = input.target, .amount = 6};
     Status collected = damageTopic().onChained(*bus_).publish(swing, chain);
@@ -85,14 +87,14 @@ TEST(StrikeIntegrationTest, EffectModifiesActionAndRemovalReverts) {
   testStrikeAction strike(bus);
 
   // No effects: base damage straight through, empty receipt.
-  ASSERT_TRUE(strike.activate(hero, StrikeInput{.target = goblin}).isOk());
+  ASSERT_TRUE(strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}}).isOk());
   EXPECT_EQ(strike.lastResult().value.amount, 6);
   EXPECT_TRUE(strike.lastResult().breakdown.empty());
 
   // Bleed applied: the strike gets stronger, and the receipt says why.
   testBleedEffect bleed("spider-bite");
-  ASSERT_TRUE(bleed.apply(bus).isOk());
-  ASSERT_TRUE(strike.activate(hero, StrikeInput{.target = goblin}).isOk());
+  ASSERT_TRUE(bleed.apply({.bus = bus}).isOk());
+  ASSERT_TRUE(strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}}).isOk());
   EXPECT_EQ(strike.lastResult().value.amount, 8);
   ASSERT_EQ(strike.lastResult().breakdown.size(), 1U);
   EXPECT_EQ(strike.lastResult().breakdown.at(0).id, "bleed-spider-bite");
@@ -101,7 +103,7 @@ TEST(StrikeIntegrationTest, EffectModifiesActionAndRemovalReverts) {
   // Bleed removed: everything reverts. Neither class referenced the other
   // at any point — the bus + chain composed them.
   ASSERT_TRUE(bleed.remove().isOk());
-  ASSERT_TRUE(strike.activate(hero, StrikeInput{.target = goblin}).isOk());
+  ASSERT_TRUE(strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}}).isOk());
   EXPECT_EQ(strike.lastResult().value.amount, 6);
   EXPECT_TRUE(strike.lastResult().breakdown.empty());
 }

@@ -71,7 +71,7 @@ TEST(EffectTest, ApplySubscribesAndMarksActive) {
   Bus bus;
   fakeBleedEffect effect;
 
-  ASSERT_TRUE(effect.apply(bus).isOk());
+  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
 
   EXPECT_TRUE(effect.isActive());
   ASSERT_TRUE(bus.publish("combat.attack", std::any(0)).isOk());
@@ -81,7 +81,7 @@ TEST(EffectTest, ApplySubscribesAndMarksActive) {
 TEST(EffectTest, RemoveUnsubscribesEverythingTracked) {
   Bus bus;
   fakeBleedEffect effect;
-  ASSERT_TRUE(effect.apply(bus).isOk());
+  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
 
   ASSERT_TRUE(effect.remove().isOk());
 
@@ -95,9 +95,9 @@ TEST(EffectTest, RemoveUnsubscribesEverythingTracked) {
 TEST(EffectTest, DoubleApplyIsError) {
   Bus bus;
   fakeBleedEffect effect;
-  ASSERT_TRUE(effect.apply(bus).isOk());
+  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
 
-  EXPECT_FALSE(effect.apply(bus).isOk());
+  EXPECT_FALSE(effect.apply({.bus = bus}).isOk());
   EXPECT_TRUE(effect.isActive());  // still active from the first apply
 }
 
@@ -110,10 +110,10 @@ TEST(EffectTest, ApplyCanRepeatAfterRemove) {
   // The Bless-for-three-turns story: effects cycle on and off the bus.
   Bus bus;
   fakeBleedEffect effect;
-  ASSERT_TRUE(effect.apply(bus).isOk());
+  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
   ASSERT_TRUE(effect.remove().isOk());
 
-  ASSERT_TRUE(effect.apply(bus).isOk());
+  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
 
   EXPECT_TRUE(effect.isActive());
   ASSERT_TRUE(bus.publish("combat.attack", std::any(0)).isOk());
@@ -126,7 +126,7 @@ TEST(EffectTest, RemoveSweepsEverythingEvenWhenOneUnsubscribeFails) {
   // state the lifecycle must never produce. The error is still reported.
   Bus bus;
   fakeBleedEffect effect;
-  ASSERT_TRUE(effect.apply(bus).isOk());
+  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
   ASSERT_TRUE(bus.unsubscribe(effect.attackSubscription()).isOk());  // gone behind its back
 
   const Status removed = effect.remove();
@@ -141,7 +141,7 @@ TEST(EffectTest, FailedApplyCleansUpAndStaysInactive) {
   Bus bus;
   fakeBrokenEffect effect;
 
-  const Status applied = effect.apply(bus);
+  const Status applied = effect.apply({.bus = bus});
 
   EXPECT_FALSE(applied.isOk());
   EXPECT_FALSE(effect.isActive());

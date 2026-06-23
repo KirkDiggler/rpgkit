@@ -81,7 +81,8 @@ int resolveDamage(const std::string& attackName, int baseDamage,
 // a fresh one — that's how "rules that come and go" stay easy later.
 int heroStrikes() {
   rpg::core::Chain<int> damage(std::vector<std::string>{"base", "final"});
-  mustBeOk(damage.add("final", "tough-skin", [](int dmg) { return dmg - 1; }));
+  mustBeOk(damage.add(
+      {.stage = "final", .id = "tough-skin", .modifier = [](int dmg) { return dmg - 1; }}));
   return resolveDamage("Strike", kStrikeDamage, damage);
 }
 

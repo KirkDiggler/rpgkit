@@ -195,11 +195,16 @@ int resolveMonsterDamage(const Card& card, Fighter& hero, rpg::core::Bus& bus) {
   rpg::core::Chain<DamageAttempt> chain(damageStages());
 
   if (hero.block > 0) {
-    mustBeOk(chain.add("final", "block-" + hero.name, [&hero](DamageAttempt data) {
-      const int absorbed = std::min(hero.block, data.baseAmount);
-      hero.block -= absorbed;
-      data.baseAmount -= absorbed;
-      return data;
+    mustBeOk(chain.add({
+        .stage = "final",
+        .id = "block-" + hero.name,
+        .modifier =
+            [&hero](DamageAttempt data) {
+              const int absorbed = std::min(hero.block, data.baseAmount);
+              hero.block -= absorbed;
+              data.baseAmount -= absorbed;
+              return data;
+            },
     }));
   }
 
@@ -216,8 +221,11 @@ int resolveMonsterDamage(const Card& card, Fighter& hero, rpg::core::Bus& bus) {
 int resolveHeal(const std::string& cardName, int baseHeal, const Fighter& target) {
   rpg::core::Chain<int> heal(std::vector<std::string>{"base", "cap"});
   const int room = std::max(0, target.maxHp - target.hp);
-  mustBeOk(
-      heal.add("cap", "max-hp-cap", [room](int amount) { return amount > room ? room : amount; }));
+  mustBeOk(heal.add({
+      .stage = "cap",
+      .id = "max-hp-cap",
+      .modifier = [room](int amount) { return amount > room ? room : amount; },
+  }));
   const rpg::core::Chain<int>::Result result = heal.execute(baseHeal);
   std::cout << "  " << cardName << ": " << baseHeal << " healing\n";
   for (const rpg::core::Chain<int>::Step& step : result.breakdown) {
@@ -266,7 +274,7 @@ bool playCard(const Card& card, Fighter& hero, Fighter& goblin,
               std::vector<std::unique_ptr<rpg::core::Effect>>& activeEffects, rpg::core::Bus& bus) {
   if (card.bleed > 0) {
     auto effect = std::make_unique<BleedEffect>(goblin, card.bleed);
-    mustBeOk(effect->apply(bus));
+    mustBeOk(effect->apply({.bus = bus}));
     activeEffects.push_back(std::move(effect));
     return false;
   }
@@ -412,9 +420,14 @@ int main() {
         if (event.target != goblin.name) {
           return rpg::core::Status::ok();
         }
-        mustBeOk(chain.add("final", "tough-skin", [](DamageAttempt data) {
-          data.baseAmount = std::max(0, data.baseAmount - 1);
-          return data;
+        mustBeOk(chain.add({
+            .stage = "final",
+            .id = "tough-skin",
+            .modifier =
+                [](DamageAttempt data) {
+                  data.baseAmount = std::max(0, data.baseAmount - 1);
+                  return data;
+                },
         }));
         return rpg::core::Status::ok();
       });

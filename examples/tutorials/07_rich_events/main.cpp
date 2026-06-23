@@ -179,11 +179,16 @@ int resolveMonsterDamage(const Card& card, Fighter& hero, rpg::core::Bus& bus) {
   // per-resolution modifier, not a bus subscriber, because it needs to mutate
   // the hero's block state.
   if (hero.block > 0) {
-    mustBeOk(chain.add("final", "block-" + hero.name, [&hero](DamageAttempt data) {
-      const int absorbed = std::min(hero.block, data.baseAmount);
-      hero.block -= absorbed;
-      data.baseAmount -= absorbed;
-      return data;
+    mustBeOk(chain.add({
+        .stage = "final",
+        .id = "block-" + hero.name,
+        .modifier =
+            [&hero](DamageAttempt data) {
+              const int absorbed = std::min(hero.block, data.baseAmount);
+              hero.block -= absorbed;
+              data.baseAmount -= absorbed;
+              return data;
+            },
     }));
   }
 
@@ -200,8 +205,11 @@ int resolveMonsterDamage(const Card& card, Fighter& hero, rpg::core::Bus& bus) {
 int resolveHeal(const std::string& cardName, int baseHeal, const Fighter& target) {
   rpg::core::Chain<int> heal(std::vector<std::string>{"base", "cap"});
   const int room = std::max(0, target.maxHp - target.hp);
-  mustBeOk(
-      heal.add("cap", "max-hp-cap", [room](int amount) { return amount > room ? room : amount; }));
+  mustBeOk(heal.add({
+      .stage = "cap",
+      .id = "max-hp-cap",
+      .modifier = [room](int amount) { return amount > room ? room : amount; },
+  }));
   const rpg::core::Chain<int>::Result result = heal.execute(baseHeal);
   std::cout << "  " << cardName << ": " << baseHeal << " healing\n";
   for (const rpg::core::Chain<int>::Step& step : result.breakdown) {
@@ -383,9 +391,14 @@ int main() {
         if (event.target != goblin.name) {
           return rpg::core::Status::ok();
         }
-        mustBeOk(chain.add("final", "tough-skin", [](DamageAttempt data) {
-          data.baseAmount = std::max(0, data.baseAmount - 1);
-          return data;
+        mustBeOk(chain.add({
+            .stage = "final",
+            .id = "tough-skin",
+            .modifier =
+                [](DamageAttempt data) {
+                  data.baseAmount = std::max(0, data.baseAmount - 1);
+                  return data;
+                },
         }));
         return rpg::core::Status::ok();
       });

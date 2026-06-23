@@ -40,18 +40,28 @@ class Chain {
     std::vector<Step> breakdown;
   };
 
+  // Params struct (binding decision 9): new receipt fields become defaulted
+  // members instead of positional inserts, so the signature stays stable and
+  // call sites that don't name the new field still compile.
+  struct AddParams {
+    std::string_view stage;
+    std::string_view id;
+    Modifier modifier;
+  };
+
   // Duplicate ids are rejected so an effect can't stack by accident; the id
   // is also the removal key and the name on the breakdown receipt.
-  Status add(std::string_view stage, std::string_view id, Modifier modifier) {
-    if (std::ranges::find(stages_, stage) == stages_.end()) {
-      return Status::error("unknown stage: " + std::string(stage));
+  Status add(AddParams params) {
+    if (std::ranges::find(stages_, params.stage) == stages_.end()) {
+      return Status::error("unknown stage: " + std::string(params.stage));
     }
-    const auto sameId = [id](const Entry& e) { return e.id == id; };
+    const auto sameId = [id = params.id](const Entry& e) { return e.id == id; };
     if (std::ranges::any_of(entries_, sameId)) {
-      return Status::error("duplicate modifier id: " + std::string(id));
+      return Status::error("duplicate modifier id: " + std::string(params.id));
     }
-    entries_.push_back(
-        {.stage = std::string(stage), .id = std::string(id), .modifier = std::move(modifier)});
+    entries_.push_back({.stage = std::string(params.stage),
+                        .id = std::string(params.id),
+                        .modifier = std::move(params.modifier)});
     return Status::ok();
   }
 

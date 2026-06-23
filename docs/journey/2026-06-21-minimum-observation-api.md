@@ -93,16 +93,35 @@ chain) knows its `source` and passes it. Core just carries it through.
 
 ### 2. `Action::activate` returns a receipt (UE#15)
 
+`activate` moves to a params struct (binding decision 9) so the signature
+stays stable as later fields land:
+
 ```cpp
+struct ActivateParams {
+  const EntityRef& owner;
+  const TInput& input;
+  std::string correlationId = "";  // caller-supplied; defaulted member
+};
 struct ActionReceipt {
   std::string id;            // action id
   std::string type;          // action type
-  std::string correlationId; // caller-supplied; "" if unused
-  // Status stays in the return: see below.
+  std::string correlationId; // echoed from ActivateParams
 };
-// activate returns StatusOr<ActionReceipt> — or, matching core's no-exception
-// style, a pair (Status, ActionReceipt) where the receipt is populated even
-// on failure so the host can log "action X failed at gate Y".
+// activate returns (Status, ActionReceipt) — receipt populated even on
+// failure so the host can log "action X failed at gate Y" with X's identity.
+std::pair<Status, ActionReceipt> activate(ActivateParams params);
+```
+
+Call sites use designated initializers; callers that don't correlate omit
+`correlationId`:
+
+```cpp
+// no correlation — host just wants the receipt
+auto [st, receipt] = action->activate({.owner = goblin, .input = strikeInput});
+
+// host correlates this activation with the card play that caused it
+auto [st2, correlated] = action->activate(
+    {.owner = goblin, .input = strikeInput, .correlationId = "card-play-7"});
 ```
 
 `correlationId` is **caller-supplied**, not core-generated. The host sets it
@@ -118,18 +137,38 @@ across calls, and has no thread-local "current action" context.
 
 ### 3. `Effect::apply`/`remove` returns a receipt (UE#14)
 
+Both move to params structs (binding decision 9). `apply` keeps its `Bus&`
+argument as a struct field; `remove` gains a struct solely because
+`correlationId` is coming and a zero-arg method can't grow a parameter
+without reshaping its signature:
+
 ```cpp
+struct ApplyParams {
+  Bus& bus;
+  std::string correlationId = "";
+};
+struct RemoveParams {
+  std::string correlationId = "";
+};
 struct EffectReceipt {
   std::string id;            // effect id
   std::string source;        // effect source
   std::vector<SubscriptionId> subscriptions;  // what was tracked
-  std::string correlationId; // caller-supplied; "" if unused
+  std::string correlationId; // echoed from ApplyParams/RemoveParams
 };
+std::pair<Status, EffectReceipt> apply(ApplyParams params);
+std::pair<Status, EffectReceipt> remove(RemoveParams params = {});
 ```
 
-Apply/Remove each return `(Status, EffectReceipt)`. The host gets "Bleed
-applied by card Strike-1, subscribed to turn.ended" as a fact, not by
-re-reading `effect.hpp`.
+Call sites:
+
+```cpp
+auto [applied, applyReceipt] = effect->apply({.bus = bus});
+auto [removed, removeReceipt] = effect->remove({.correlationId = "card-play-7"});
+```
+
+The host gets "Bleed applied by card Strike-1, subscribed to turn.ended" as
+a fact, not by re-reading `effect.hpp`.
 
 ## Correlation model
 
@@ -172,29 +211,36 @@ already holds.
 Three follow-up rpgkit issues, each verified back in rpgkit-ue:
 
 1. **Chain source metadata** — extend `Chain<T>::Step` with `source`, thread
-   it through `add`/`execute`. Verify in UE#9: the damage breakdown widget
-   names "Vulnerability" as the modifier source without a hardcoded string.
+   it through `add`/`execute`. The params-struct reshape (`AddParams`,
+   `ActivateParams`, `ApplyParams`, `RemoveParams`) landed in #47; this
+   slice only adds the `source` defaulted member and the `Step.source`
+   field. Verify in UE#9: the damage breakdown widget names "Vulnerability"
+   as the modifier source without a hardcoded string.
 2. **Action receipt** — `Action::activate` returns `(Status, ActionReceipt)`.
-   Verify in UE#15: a new action type produces HUD/log output from the
-   receipt, no GameMode branch added.
+   The `ActivateParams` struct already exists (#47); this slice adds the
+   `correlationId` defaulted member and changes the return type. Verify in
+   UE#15: a new action type produces HUD/log output from the receipt, no
+   GameMode branch added.
 3. **Effect receipt** — `Effect::apply`/`remove` return
-   `(Status, EffectReceipt)`. Verify in UE#14: apply/tick/expire display
+   `(Status, EffectReceipt)`. The `ApplyParams`/`RemoveParams` structs
+   already exist (#47); this slice adds `correlationId` defaulted members
+   and changes the return types. Verify in UE#14: apply/tick/expire display
    reads from receipts, not `effect.hpp` internals.
 
 No issue is opened for a sink, observer, or `StateChanged`. If a second host
 (Unity via C ABI) later needs the same receipts, that confirms the shape; if
 it needs a sink, that's a new design note, not an extension of this one.
 
-## Open questions for review
+## Resolved questions
 
-- Is `(Status, Receipt)` the right return shape, or should core introduce a
-  `StatusOr<T>` (Go-style: never success-with-empty-value)? The latter would
-  tidy the three return sites but is a separate binding decision.
-- Should `correlationId` be `std::string` or an opaque `CorrelationId` wrapper
-  (matching `SubscriptionId`'s wrapped-handle style)? String is simpler and
-  host-friendly; a wrapper reserves room for a future non-string id without
-  baking one in now.
+Both were implementation-slice questions, not design-note blockers. They are
+answered in the [chain receipt source metadata note](./2026-06-21-chain-receipt-source-metadata.md#answers-to-the-34-open-questions)
+and applied consistently across slices 1-3:
 
-Both are implementation-slice questions, not design-note blockers. They get
-answered in the first follow-up issue (Chain source metadata) and applied
-consistently.
+1. **`(Status, Receipt)` vs `StatusOr<T>`.** `(Status, Receipt)` — `Status`
+   first to match the existing `activate`/`apply`/`remove` signatures, receipt
+   populated even on failure so the host can log "action X failed at gate Y"
+   with X's identity. No `StatusOr<T>` template is introduced.
+2. **`correlationId` as `std::string` vs opaque wrapper.** `std::string` —
+   caller-supplied and host-defined; serializes, logs, and compares trivially.
+   If a second host needs a non-string id, that's a new design note.

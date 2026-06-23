@@ -30,6 +30,7 @@ Settled in the design + plan. Implementers do not relitigate.
 | 6 | **The breakdown is in scope for v1.** `Chain<T>::execute` returns the folded value *and* per-modifier records. |
 | 7 | **Naming:** types `PascalCase`, methods `lowerCamelCase`, headers `snake_case.hpp` under `include/rpg/core/`. Notification-vs-chained lives in the type (`Topic<T>` vs `ChainedTopic<T>`), both with plain `subscribe`/`publish`. |
 | 8 | **Synchronous, ordered, fail-fast delivery.** Publish walks subscribers in insertion order, returns the first error. |
+| 9 | **Params-struct signatures for multi-field operations.** `Chain::add`, `Action::activate`, `Effect::apply`, `Effect::remove` take a single `OpParams`-style struct (`AddParams`, `ActivateParams`, `ApplyParams`, `RemoveParams`) and are called with C++20 designated initializers. New receipt fields are defaulted struct members, not positional inserts — the signature never reshapes and call sites that don't name the new field still compile. Per-operation structs, not a generic union (per the observation API note's "no top-level `Observation` type" non-goal). Single-argument operations (`Chain::remove`, `Action::canActivate`) stay positional until they grow a second field. |
 
 ## Workflow
 
@@ -39,6 +40,10 @@ Settled in the design + plan. Implementers do not relitigate.
 - **`make pre-commit` green before every push** (fmt-check + clang-tidy + tests).
   CI enforces the same. Never `--no-verify`.
 - Open the PR, wait for Copilot review, fix or reply on every thread.
+- **Check Copilot review comments before requesting human review.** Read
+  every inline comment Copilot leaves; either address it in a follow-up
+  commit or reply explaining why it's not addressed. Do not leave Copilot
+  threads open when asking Kirk to review.
 - **Never merge without Kirk's explicit approval.**
 
 ## Testing

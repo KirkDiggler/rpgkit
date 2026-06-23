@@ -54,18 +54,37 @@ struct Step {
 };
 ```
 
-`Chain::add` gains a `source` parameter (default `""` for callers that don't
-have one — keeps every existing example and tutorial working unchanged):
+`Chain::add` moves to a **params struct** so the signature stays stable as
+later slices add fields (binding decision 9). `source` is a defaulted member
+— callers that don't have one omit the field and the receipt row gets an
+empty source, which the host renders as "innate" or omits.
 
 ```cpp
-Status add(std::string_view stage, std::string_view id, std::string_view source,
-           Modifier modifier);
+struct AddParams {
+  std::string_view stage;
+  std::string_view id;
+  Modifier modifier;
+  std::string_view source = "";  // defaulted member, not a positional default
+};
+Status add(AddParams params);
 ```
 
-Callers that have an effect in hand pass `effect.source()`; callers adding a
-rulebook modifier with no effect (e.g. the `tough-skin` line in the tutorials)
-pass `""` and the receipt row simply has an empty source, which the host
-renders as "innate" or omits.
+Call sites use C++20 designated initializers, so a caller with an effect in
+hand names every field and a caller with no effect simply omits `source`:
+
+```cpp
+chain.add({.stage = "final", .id = "rage", .modifier = [](int v){ return v + 2; }});
+chain.add({.stage = "final", .id = "bleed", .modifier = bleedMod,
+           .source = effect.source()});
+```
+
+A future receipt field (slice 2/3 style) is another defaulted member on
+`AddParams` — the signature never reshapes and call sites that don't name
+the new field still compile. Contrast with the positional form
+`(stage, id, source, modifier)`: inserting `source` before `modifier` breaks
+the C++ default-argument rule (defaults only skip *trailing* params), so
+every existing `chain.add(...)` call site would need `""` inserted before
+the lambda. The params struct sidesteps that entirely.
 
 ## Why only `source`, not label/category/opaque metadata
 
@@ -128,13 +147,17 @@ One rpgkit issue, verified back in rpgkit-ue:
 1. **Extend `Chain<T>::Step` with `source`; thread it through `add`/`execute`.**
    - Test plan (TDD, per AGENTS.md):
      - New `chain_test.cpp` case: `add` with a `source` populates
-       `Step.source`; `add` without keeps `Step.source == ""` (default).
-     - New `chain_test.cpp` case: two modifiers with the same `id` from
-       different sources still reject (dedup is by `id`, not `source`).
-     - Existing `chain_test.cpp` cases compile unchanged (default `source`).
-     - `strike_integration_test.cpp` updated to pass `effect.source()` from
-       the bleed subscriber; assertion that the breakdown step's `source`
-       matches the effect's source.
+       `Step.source`; `add` without keeps `Step.source == ""` (defaulted
+       member).
+      - New `chain_test.cpp` case: two modifiers with the same `id` from
+        different sources still reject (dedup is by `id`, not `source`).
+      - Existing `chain_test.cpp` cases and every `chain.add(...)` call site
+        across `examples/` and `tests/` already use designated initializers
+        (the params-struct reshape landed in #47). This slice only adds
+        `.source = ...` to the call sites that have one.
+      - `strike_integration_test.cpp` updated to pass `effect.source()` from
+        the bleed subscriber; assertion that the breakdown step's `source`
+        matches the effect's source.
    - Verification in rpgkit-ue#9: the damage breakdown widget renders
      "Vulnerability" as the modifier source by reading `Step.source` and
      joining on it — no per-card hardcoded string, no GameMode branch.
