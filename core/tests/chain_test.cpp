@@ -142,5 +142,53 @@ TEST(ChainTest, WorksWithStructEventData) {
   EXPECT_EQ(result.value.amount, 14);
 }
 
+TEST(ChainTest, SourcePropagatedToStep) {
+  // The source that granted the modifier lands on the breakdown step so the
+  // host can explain "Vulnerability doubled the damage" without a hardcoded
+  // string (design note: chain receipt source metadata).
+  Chain<int> chain(kStages());
+  ASSERT_TRUE(chain
+                  .add({.stage = "effects",
+                        .id = "rage",
+                        .modifier = [](int v) { return v + 2; },
+                        .source = "rage-spell"})
+                  .isOk());
+
+  const Chain<int>::Result result = chain.execute(5);
+  ASSERT_EQ(result.breakdown.size(), 1U);
+  EXPECT_EQ(result.breakdown.at(0).source, "rage-spell");
+}
+
+TEST(ChainTest, SourceDefaultsToEmptyWhenOmitted) {
+  // Rulebook modifiers with no effect (e.g. tough-skin) omit .source; the
+  // step carries "" which the host renders as "innate" or omits.
+  Chain<int> chain(kStages());
+  ASSERT_TRUE(chain.add({.stage = "effects", .id = "rage", .modifier = [](int v) { return v + 2; }})
+                  .isOk());
+
+  const Chain<int>::Result result = chain.execute(5);
+  ASSERT_EQ(result.breakdown.size(), 1U);
+  EXPECT_EQ(result.breakdown.at(0).source, "");
+}
+
+TEST(ChainTest, DuplicateIdWithDifferentSourceStillRejects) {
+  // Dedup is by id, not source: the same modifier id from two sources is
+  // still a duplicate — an effect can't stack by claiming a different source.
+  Chain<int> chain(kStages());
+  ASSERT_TRUE(chain
+                  .add({.stage = "effects",
+                        .id = "rage",
+                        .modifier = [](int v) { return v + 2; },
+                        .source = "spell"})
+                  .isOk());
+
+  const Status dup = chain.add({.stage = "effects",
+                                .id = "rage",
+                                .modifier = [](int v) { return v + 2; },
+                                .source = "item"});
+  EXPECT_FALSE(dup.isOk());
+  EXPECT_EQ(chain.execute(0).value, 2);  // still applied exactly once
+}
+
 }  // namespace
 }  // namespace rpg::core
