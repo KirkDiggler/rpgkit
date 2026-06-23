@@ -103,7 +103,11 @@ TEST(StrikeIntegrationTest, EffectModifiesActionAndRemovalReverts) {
 
   // Bleed applied: the strike gets stronger, and the chain breakdown says why.
   testBleedEffect bleed("spider-bite");
-  ASSERT_TRUE(bleed.apply({.bus = bus}).isOk());
+  auto [applyStatus, applyReceipt] = bleed.apply({.bus = bus});
+  ASSERT_TRUE(applyStatus.isOk());
+  EXPECT_EQ(applyReceipt.id, "bleed-spider-bite");
+  EXPECT_EQ(applyReceipt.source, "spider-bite");
+  ASSERT_EQ(applyReceipt.subscriptions.size(), 1U);
   auto [st2, receipt2] = strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}});
   ASSERT_TRUE(st2.isOk());
   EXPECT_EQ(receipt2.id, "strike-1");
@@ -115,7 +119,10 @@ TEST(StrikeIntegrationTest, EffectModifiesActionAndRemovalReverts) {
 
   // Bleed removed: everything reverts. Neither class referenced the other
   // at any point — the bus + chain composed them.
-  ASSERT_TRUE(bleed.remove().isOk());
+  auto [removeStatus, removeReceipt] = bleed.remove();
+  ASSERT_TRUE(removeStatus.isOk());
+  EXPECT_EQ(removeReceipt.id, "bleed-spider-bite");
+  EXPECT_EQ(removeReceipt.source, "spider-bite");
   auto [st3, receipt3] = strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}});
   ASSERT_TRUE(st3.isOk());
   EXPECT_EQ(receipt3.id, "strike-1");

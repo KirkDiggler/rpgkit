@@ -71,49 +71,65 @@ TEST(EffectTest, ApplySubscribesAndMarksActive) {
   Bus bus;
   fakeBleedEffect effect;
 
-  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
+  auto [status, receipt] = effect.apply({.bus = bus});
+  ASSERT_TRUE(status.isOk());
 
   EXPECT_TRUE(effect.isActive());
   ASSERT_TRUE(bus.publish("combat.attack", std::any(0)).isOk());
   EXPECT_EQ(effect.attackCalls(), 1);
+  EXPECT_EQ(receipt.id, "bleed-1");
+  EXPECT_EQ(receipt.source, "spider-bite");
+  EXPECT_EQ(receipt.subscriptions.size(), 2U);
 }
 
 TEST(EffectTest, RemoveUnsubscribesEverythingTracked) {
   Bus bus;
   fakeBleedEffect effect;
-  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
+  ASSERT_TRUE(effect.apply({.bus = bus}).first.isOk());
 
-  ASSERT_TRUE(effect.remove().isOk());
+  auto [status, receipt] = effect.remove();
+  ASSERT_TRUE(status.isOk());
 
   EXPECT_FALSE(effect.isActive());
   ASSERT_TRUE(bus.publish("combat.attack", std::any(0)).isOk());
   ASSERT_TRUE(bus.publish("turn.ended", std::any(0)).isOk());
   EXPECT_EQ(effect.attackCalls(), 0);
   EXPECT_EQ(effect.turnCalls(), 0);
+  EXPECT_EQ(receipt.id, "bleed-1");
+  EXPECT_EQ(receipt.source, "spider-bite");
+  EXPECT_EQ(receipt.subscriptions.size(), 2U);
 }
 
 TEST(EffectTest, DoubleApplyIsError) {
   Bus bus;
   fakeBleedEffect effect;
-  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
+  ASSERT_TRUE(effect.apply({.bus = bus}).first.isOk());
 
-  EXPECT_FALSE(effect.apply({.bus = bus}).isOk());
+  auto [status, receipt] = effect.apply({.bus = bus});
+  EXPECT_FALSE(status.isOk());
   EXPECT_TRUE(effect.isActive());  // still active from the first apply
+  // Receipt is populated even on failure.
+  EXPECT_EQ(receipt.id, "bleed-1");
+  EXPECT_EQ(receipt.source, "spider-bite");
 }
 
 TEST(EffectTest, RemoveWithoutApplyIsError) {
   fakeBleedEffect effect;
-  EXPECT_FALSE(effect.remove().isOk());
+  auto [status, receipt] = effect.remove();
+  EXPECT_FALSE(status.isOk());
+  EXPECT_EQ(receipt.id, "bleed-1");
+  EXPECT_EQ(receipt.source, "spider-bite");
 }
 
 TEST(EffectTest, ApplyCanRepeatAfterRemove) {
   // The Bless-for-three-turns story: effects cycle on and off the bus.
   Bus bus;
   fakeBleedEffect effect;
-  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
-  ASSERT_TRUE(effect.remove().isOk());
+  ASSERT_TRUE(effect.apply({.bus = bus}).first.isOk());
+  ASSERT_TRUE(effect.remove().first.isOk());
 
-  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
+  auto [status, receipt] = effect.apply({.bus = bus});
+  ASSERT_TRUE(status.isOk());
 
   EXPECT_TRUE(effect.isActive());
   ASSERT_TRUE(bus.publish("combat.attack", std::any(0)).isOk());
@@ -126,28 +142,82 @@ TEST(EffectTest, RemoveSweepsEverythingEvenWhenOneUnsubscribeFails) {
   // state the lifecycle must never produce. The error is still reported.
   Bus bus;
   fakeBleedEffect effect;
-  ASSERT_TRUE(effect.apply({.bus = bus}).isOk());
+  ASSERT_TRUE(effect.apply({.bus = bus}).first.isOk());
   ASSERT_TRUE(bus.unsubscribe(effect.attackSubscription()).isOk());  // gone behind its back
 
-  const Status removed = effect.remove();
+  auto [status, receipt] = effect.remove();
 
-  EXPECT_FALSE(removed.isOk());     // the unknown-id failure is surfaced...
+  EXPECT_FALSE(status.isOk());      // the unknown-id failure is surfaced...
   EXPECT_FALSE(effect.isActive());  // ...but the effect still fully deactivated
   ASSERT_TRUE(bus.publish("turn.ended", std::any(0)).isOk());
   EXPECT_EQ(effect.turnCalls(), 0);  // and the OTHER subscription was swept
+  EXPECT_EQ(receipt.subscriptions.size(), 2U);
 }
 
 TEST(EffectTest, FailedApplyCleansUpAndStaysInactive) {
   Bus bus;
   fakeBrokenEffect effect;
 
-  const Status applied = effect.apply({.bus = bus});
+  auto [status, receipt] = effect.apply({.bus = bus});
 
-  EXPECT_FALSE(applied.isOk());
+  EXPECT_FALSE(status.isOk());
   EXPECT_FALSE(effect.isActive());
   // The half-done subscription was rolled back: publishing reaches nothing.
   ASSERT_TRUE(bus.publish("combat.attack", std::any(0)).isOk());
   EXPECT_EQ(effect.calls, 0);
+  // Receipt is populated even on failure.
+  EXPECT_EQ(receipt.id, "broken-1");
+  EXPECT_EQ(receipt.source, "test");
+}
+
+TEST(EffectTest, ApplyReceiptPopulatedEvenOnFailure) {
+  Bus bus;
+  fakeBrokenEffect effect;
+
+  auto [status, receipt] = effect.apply({.bus = bus});
+
+  EXPECT_FALSE(status.isOk());
+  EXPECT_EQ(receipt.id, "broken-1");
+  EXPECT_EQ(receipt.source, "test");
+  EXPECT_TRUE(receipt.subscriptions.empty());
+}
+
+TEST(EffectTest, CorrelationIdEchoedFromApplyInput) {
+  Bus bus;
+  fakeBleedEffect effect;
+
+  auto [status, receipt] = effect.apply({.bus = bus, .correlationId = "card-play-7"});
+  ASSERT_TRUE(status.isOk());
+  EXPECT_EQ(receipt.correlationId, "card-play-7");
+}
+
+TEST(EffectTest, CorrelationIdDefaultsToEmptyWhenOmitted) {
+  Bus bus;
+  fakeBleedEffect effect;
+
+  auto [status, receipt] = effect.apply({.bus = bus});
+  ASSERT_TRUE(status.isOk());
+  EXPECT_EQ(receipt.correlationId, "");
+}
+
+TEST(EffectTest, CorrelationIdEchoedFromRemoveInput) {
+  Bus bus;
+  fakeBleedEffect effect;
+  ASSERT_TRUE(effect.apply({.bus = bus}).first.isOk());
+
+  auto [status, receipt] = effect.remove({.correlationId = "card-play-7"});
+  ASSERT_TRUE(status.isOk());
+  EXPECT_EQ(receipt.correlationId, "card-play-7");
+}
+
+TEST(EffectTest, RemoveCorrelationIdDefaultsToEmptyWhenOmitted) {
+  Bus bus;
+  fakeBleedEffect effect;
+  ASSERT_TRUE(effect.apply({.bus = bus}).first.isOk());
+
+  auto [status, receipt] = effect.remove();
+  ASSERT_TRUE(status.isOk());
+  EXPECT_EQ(receipt.correlationId, "");
 }
 
 }  // namespace

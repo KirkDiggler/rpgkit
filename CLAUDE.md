@@ -35,6 +35,8 @@ Settled in the design + plan. Implementers do not relitigate.
 ## Workflow
 
 - **Issue-first.** No branch without an issue; one PR per logical unit.
+- **Cross-repo references use the full path.** `#14` resolves to rpgkit's
+  own #14 — always write `KirkDiggler/rpgkit-ue#14` for the sibling repo.
 - Branch from fresh main; never reuse old branches; merge, never rebase.
 - TDD: test first, implement, `make test` green, commit.
 - **`make pre-commit` green before every push** (fmt-check + clang-tidy + tests).

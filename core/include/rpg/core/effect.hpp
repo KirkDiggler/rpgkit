@@ -10,6 +10,16 @@
 
 namespace rpg::core {
 
+// The receipt from an Effect::apply or Effect::remove call. Populated even on
+// failure so the host can log which effect failed and what it had subscribed
+// to. The host routes this to its own sinks (UE logs, HUD, debug tools).
+struct EffectReceipt {
+  std::string id;
+  std::string source;
+  std::vector<SubscriptionId> subscriptions;  // what was tracked (apply) or swept (remove)
+  std::string correlationId;                  // echoed from ApplyParams/RemoveParams
+};
+
 // The persistent listener (design decision 10): an Effect lives on the bus
 // between resolutions. apply() runs the subclass's onApply (which subscribes
 // via track()), remembers the bus, and marks active; remove() unsubscribes
@@ -38,18 +48,26 @@ class Effect {
 
   // Params structs (binding decision 9): new receipt fields become defaulted
   // members instead of positional inserts, so the signature stays stable.
-  // remove takes a defaulted empty struct so the zero-arg call still compiles;
-  // #45 adds correlationId as a defaulted member.
+  // remove has a zero-arg overload (delegates to remove(RemoveParams{})) so
+  // internal effect self-removal (onTurnEnd) and callers that don't correlate
+  // still compile without naming the struct.
   // Reference members are intentional — the struct is a temporary that only
   // outlives the function call it's passed to.
   struct ApplyParams {
-    Bus& bus;  // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    Bus& bus;                        // NOLINT(cppcoreguidelines-avoid-const-or-ref-data-members)
+    std::string correlationId = "";  // NOLINT(readability-redundant-string-init)
   };
-  struct RemoveParams {};
+  struct RemoveParams {
+    std::string correlationId = "";  // NOLINT(readability-redundant-string-init)
+  };
 
-  [[nodiscard]] Status apply(ApplyParams params) {
+  [[nodiscard]] std::pair<Status, EffectReceipt> apply(ApplyParams params) {
+    EffectReceipt receipt{.id = id_,
+                          .source = source_,
+                          .subscriptions = {},
+                          .correlationId = std::move(params.correlationId)};
     if (active_) {
-      return Status::error("effect already active: " + id_);
+      return {Status::error("effect already active: " + id_), std::move(receipt)};
     }
     Bus& bus = params.bus;
     bus_ = &bus;
@@ -64,15 +82,22 @@ class Effect {
       }
       tracked_.clear();
       bus_ = nullptr;
-      return applied;
+      return {applied, std::move(receipt)};
     }
+    receipt.subscriptions = tracked_;
     active_ = true;
-    return Status::ok();
+    return {Status::ok(), std::move(receipt)};
   }
 
-  [[nodiscard]] Status remove(RemoveParams /*params*/ = {}) {
+  [[nodiscard]] std::pair<Status, EffectReceipt> remove() { return remove(RemoveParams{}); }
+
+  [[nodiscard]] std::pair<Status, EffectReceipt> remove(RemoveParams params) {
+    EffectReceipt receipt{.id = id_,
+                          .source = source_,
+                          .subscriptions = {},
+                          .correlationId = std::move(params.correlationId)};
     if (!active_ || bus_ == nullptr) {
-      return Status::error("effect not active: " + id_);
+      return {Status::error("effect not active: " + id_), std::move(receipt)};
     }
     // Best-effort sweep: Bus::unsubscribe only fails for unknown ids (the
     // subscription is already gone), so never stop early — finish removing
@@ -85,10 +110,10 @@ class Effect {
         firstError = std::move(removed);
       }
     }
-    tracked_.clear();
+    receipt.subscriptions = std::move(tracked_);
     bus_ = nullptr;
     active_ = false;
-    return firstError;
+    return {firstError, std::move(receipt)};
   }
 
  protected:
