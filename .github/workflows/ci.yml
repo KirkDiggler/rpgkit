@@ -54,3 +54,37 @@ jobs:
       # CI enforces exactly what `make pre-commit` does locally.
       - name: Lint
         run: make lint
+
+  # Auto-tags a release when the version in CMakeLists.txt changes and
+  # merges to main. Runs only on main pushes (not PRs), after build/test/lint
+  # pass. Consumers (rpgkit-ue) pin FetchContent to these tags.
+  tag:
+    name: tag release
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-windows, lint]
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Read version from CMakeLists.txt
+        id: version
+        run: |
+          version=$(grep -oP 'project\(rpgkit VERSION \K[0-9]+\.[0-9]+\.[0-9]+' CMakeLists.txt)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+      - name: Check if tag exists
+        id: check
+        run: |
+          if git rev-parse -q --verify "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create tag
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
