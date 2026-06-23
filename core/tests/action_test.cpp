@@ -33,15 +33,21 @@ class fakeStrikeAction : public Action<StrikeInput> {
     return Status::ok();
   }
 
-  [[nodiscard]] Status activate(ActivateParams params) override {
+  [[nodiscard]] std::pair<Status, ActionReceipt> activate(ActivateParams params) override {
     const EntityRef& owner = params.owner;
     const StrikeInput& input = params.input;
+    ActionReceipt receipt{
+        .id = id(), .type = type(), .correlationId = std::move(params.correlationId)};
     Status gate = canActivate(owner, input);
     if (!gate.isOk()) {
-      return gate;
+      return {gate, std::move(receipt)};
     }
     energy_ -= input.cost;
-    return bus_->publish("combat.attack", std::any(input.targetId));
+    Status published = bus_->publish("combat.attack", std::any(input.targetId));
+    if (!published.isOk()) {
+      return {published, std::move(receipt)};
+    }
+    return {Status::ok(), std::move(receipt)};
   }
 
   [[nodiscard]] int energy() const { return energy_; }
@@ -77,12 +83,15 @@ TEST(ActionTest, ActivateSpendsAndPublishes) {
   fakeStrikeAction strike(bus, 3);
   const EntityRef hero{.id = "hero-1", .type = "character"};
 
-  ASSERT_TRUE(
-      strike.activate({.owner = hero, .input = StrikeInput{.targetId = "goblin-7", .cost = 1}})
-          .isOk());
+  auto [status, receipt] =
+      strike.activate({.owner = hero, .input = StrikeInput{.targetId = "goblin-7", .cost = 1}});
+  ASSERT_TRUE(status.isOk());
 
   EXPECT_EQ(struckTarget, "goblin-7");
   EXPECT_EQ(strike.energy(), 2);
+  EXPECT_EQ(receipt.id, "strike-1");
+  EXPECT_EQ(receipt.type, "strike");
+  EXPECT_EQ(receipt.correlationId, "");
 }
 
 TEST(ActionTest, GatedActivateChangesNothing) {
@@ -96,11 +105,42 @@ TEST(ActionTest, GatedActivateChangesNothing) {
   fakeStrikeAction strike(bus, 0);
   const EntityRef hero{.id = "hero-1", .type = "character"};
 
-  EXPECT_FALSE(
-      strike.activate({.owner = hero, .input = StrikeInput{.targetId = "goblin", .cost = 1}})
-          .isOk());
+  auto [status, receipt] =
+      strike.activate({.owner = hero, .input = StrikeInput{.targetId = "goblin", .cost = 1}});
+  EXPECT_FALSE(status.isOk());
   EXPECT_EQ(published, 0);
   EXPECT_EQ(strike.energy(), 0);
+  // Receipt is populated even on failure so the host can log which action failed.
+  EXPECT_EQ(receipt.id, "strike-1");
+  EXPECT_EQ(receipt.type, "strike");
+}
+
+TEST(ActionTest, ReceiptPopulatedEvenOnGateFailure) {
+  Bus bus;
+  fakeStrikeAction strike(bus, 0);
+  const EntityRef hero{.id = "hero-1", .type = "character"};
+
+  auto [status, receipt] =
+      strike.activate({.owner = hero, .input = StrikeInput{.targetId = "goblin", .cost = 1}});
+
+  EXPECT_FALSE(status.isOk());
+  EXPECT_EQ(receipt.id, "strike-1");
+  EXPECT_EQ(receipt.type, "strike");
+  EXPECT_EQ(receipt.correlationId, "");
+}
+
+TEST(ActionTest, CorrelationIdEchoedFromInput) {
+  Bus bus;
+  bus.subscribe("combat.attack", [](const std::any&) { return Status::ok(); });
+
+  fakeStrikeAction strike(bus, 3);
+  const EntityRef hero{.id = "hero-1", .type = "character"};
+
+  auto [status, receipt] = strike.activate({.owner = hero,
+                                            .input = StrikeInput{.targetId = "goblin-7", .cost = 1},
+                                            .correlationId = "card-play-7"});
+  ASSERT_TRUE(status.isOk());
+  EXPECT_EQ(receipt.correlationId, "card-play-7");
 }
 
 }  // namespace
