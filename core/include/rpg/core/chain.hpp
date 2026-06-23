@@ -28,10 +28,13 @@ class Chain {
   explicit Chain(std::vector<std::string> stages) : stages_(std::move(stages)) {}
 
   // One record per modifier applied: the breakdown is a first-class output
-  // ("rage: +2, bless: +4"), not a debug afterthought.
+  // ("rage: +2, bless: +4"), not a debug afterthought. `source` names the
+  // effect that granted the modifier ("" if none) so the host can explain
+  // "Vulnerability doubled the damage" without a hardcoded string.
   struct Step {
     std::string id;
     std::string stage;
+    std::string source;
     T before;
     T after;
   };
@@ -47,6 +50,9 @@ class Chain {
     std::string_view stage;
     std::string_view id;
     Modifier modifier;
+    // Explicit "" default documents the intent and keeps call sites that omit
+    // .source free of missing-designated-field-initializer warnings.
+    std::string_view source = "";  // NOLINT(readability-redundant-string-init)
   };
 
   // Duplicate ids are rejected so an effect can't stack by accident; the id
@@ -61,7 +67,8 @@ class Chain {
     }
     entries_.push_back({.stage = std::string(params.stage),
                         .id = std::string(params.id),
-                        .modifier = std::move(params.modifier)});
+                        .modifier = std::move(params.modifier),
+                        .source = std::string(params.source)});
     return Status::ok();
   }
 
@@ -88,6 +95,7 @@ class Chain {
         result.value = entry.modifier(std::move(result.value));
         result.breakdown.push_back({.id = entry.id,
                                     .stage = entry.stage,
+                                    .source = entry.source,
                                     .before = std::move(before),
                                     .after = result.value});
       }
@@ -100,6 +108,7 @@ class Chain {
     std::string stage;
     std::string id;
     Modifier modifier;
+    std::string source;
   };
 
   std::vector<std::string> stages_;

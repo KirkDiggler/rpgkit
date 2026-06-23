@@ -36,11 +36,15 @@ class testBleedEffect : public Effect {
  protected:
   Status onApply(Bus& bus) override {
     track(damageTopic().onChained(bus).subscribe(
-        [id = id()](const DamageEvent&, Chain<DamageEvent>& chain) {
-          return chain.add({.stage = "effects", .id = id, .modifier = [](DamageEvent data) {
-                              data.amount += 2;
-                              return data;
-                            }});
+        [id = id(), source = source()](const DamageEvent&, Chain<DamageEvent>& chain) {
+          return chain.add({.stage = "effects",
+                            .id = id,
+                            .modifier =
+                                [](DamageEvent data) {
+                                  data.amount += 2;
+                                  return data;
+                                },
+                            .source = source});
         }));
     return Status::ok();
   }
@@ -99,6 +103,7 @@ TEST(StrikeIntegrationTest, EffectModifiesActionAndRemovalReverts) {
   ASSERT_EQ(strike.lastResult().breakdown.size(), 1U);
   EXPECT_EQ(strike.lastResult().breakdown.at(0).id, "bleed-spider-bite");
   EXPECT_EQ(strike.lastResult().breakdown.at(0).stage, "effects");
+  EXPECT_EQ(strike.lastResult().breakdown.at(0).source, "spider-bite");
 
   // Bleed removed: everything reverts. Neither class referenced the other
   // at any point — the bus + chain composed them.
