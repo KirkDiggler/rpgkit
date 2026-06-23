@@ -27,7 +27,9 @@ class Burning : public rpg::core::Effect {
     --stacks_;
     if (stacks_ == 0) {
       std::cout << "🔥 Burning expired\n";
-      return remove();  // unsubscribe everything
+      auto [removeStatus, removeReceipt] = remove();  // unsubscribe everything
+      (void)removeReceipt;
+      return removeStatus;
     }
     return rpg::core::Status::ok();
   }
@@ -39,7 +41,8 @@ int main() {
   std::cout << "=== Burning Effect Demo ===\n\n";
 
   Burning burn(3);
-  (void)burn.apply({.bus = bus});
+  auto [applyStatus, applyReceipt] = burn.apply({.bus = bus});
+  (void)applyStatus;
 
   constexpr int kMaxTurns = 5;
   for (int turn = 1; turn <= kMaxTurns; ++turn) {

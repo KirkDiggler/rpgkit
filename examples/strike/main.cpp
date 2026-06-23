@@ -39,6 +39,7 @@ using rpg::core::ActionReceipt;
 using rpg::core::Bus;
 using rpg::core::Chain;
 using rpg::core::Effect;
+using rpg::core::EffectReceipt;
 using rpg::core::EntityRef;
 using rpg::core::Status;
 using rpg::core::TopicDef;
@@ -168,7 +169,12 @@ int main() {
 
   std::cout << "\n-- bleed applied (the goblin bit back) --\n";
   BleedEffect bleed("spider-bite");
-  mustBeOk(bleed.apply({.bus = bus}));
+  {
+    auto [status, receipt] = bleed.apply({.bus = bus});
+    mustBeOk(status);
+    std::cout << "  effect applied: " << receipt.id << " (source: " << receipt.source << ", "
+              << receipt.subscriptions.size() << " subscriptions)\n";
+  }
   {
     auto [status, receipt] = strike.activate(
         {.owner = hero, .input = StrikeInput{.target = goblin}, .correlationId = "card-play-1"});
@@ -178,7 +184,12 @@ int main() {
   }
 
   std::cout << "\n-- bleed removed (the wound closed) --\n";
-  mustBeOk(bleed.remove());
+  {
+    auto [status, receipt] = bleed.remove();
+    mustBeOk(status);
+    std::cout << "  effect removed: " << receipt.id << " (" << receipt.subscriptions.size()
+              << " subscriptions swept)\n";
+  }
   {
     auto [status, receipt] =
         strike.activate({.owner = hero, .input = StrikeInput{.target = goblin}});

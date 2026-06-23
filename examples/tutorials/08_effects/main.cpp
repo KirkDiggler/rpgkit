@@ -160,7 +160,9 @@ class BleedEffect : public rpg::core::Effect {
     --stacks_;
     if (stacks_ == 0) {
       std::cout << "  Bleed faded\n";
-      return remove();
+      auto [removeStatus, removeReceipt] = remove();
+      (void)removeReceipt;
+      return removeStatus;
     }
     return rpg::core::Status::ok();
   }
@@ -274,7 +276,8 @@ bool playCard(const Card& card, Fighter& hero, Fighter& goblin,
               std::vector<std::unique_ptr<rpg::core::Effect>>& activeEffects, rpg::core::Bus& bus) {
   if (card.bleed > 0) {
     auto effect = std::make_unique<BleedEffect>(goblin, card.bleed);
-    mustBeOk(effect->apply({.bus = bus}));
+    auto [status, receipt] = effect->apply({.bus = bus});
+    mustBeOk(status);
     activeEffects.push_back(std::move(effect));
     return false;
   }
