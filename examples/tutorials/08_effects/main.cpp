@@ -278,6 +278,8 @@ bool playCard(const Card& card, Fighter& hero, Fighter& goblin,
     auto effect = std::make_unique<BleedEffect>(goblin, card.bleed);
     auto [status, receipt] = effect->apply({.bus = bus});
     mustBeOk(status);
+    std::cout << "  " << receipt.id << " applied to " << goblin.name << " ("
+              << receipt.subscriptions.size() << " subscriptions)\n";
     activeEffects.push_back(std::move(effect));
     return false;
   }

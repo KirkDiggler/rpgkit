@@ -48,7 +48,9 @@ class Effect {
 
   // Params structs (binding decision 9): new receipt fields become defaulted
   // members instead of positional inserts, so the signature stays stable.
-  // remove takes a defaulted empty struct so the zero-arg call still compiles.
+  // remove has a zero-arg overload (delegates to remove(RemoveParams{})) so
+  // internal effect self-removal (onTurnEnd) and callers that don't correlate
+  // still compile without naming the struct.
   // Reference members are intentional — the struct is a temporary that only
   // outlives the function call it's passed to.
   struct ApplyParams {
@@ -108,8 +110,7 @@ class Effect {
         firstError = std::move(removed);
       }
     }
-    receipt.subscriptions = tracked_;
-    tracked_.clear();
+    receipt.subscriptions = std::move(tracked_);
     bus_ = nullptr;
     active_ = false;
     return {firstError, std::move(receipt)};

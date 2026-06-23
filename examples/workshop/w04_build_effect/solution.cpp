@@ -43,6 +43,8 @@ int main() {
   Burning burn(3);
   auto [applyStatus, applyReceipt] = burn.apply({.bus = bus});
   (void)applyStatus;
+  std::cout << "  " << applyReceipt.id << " applied (" << applyReceipt.subscriptions.size()
+            << " subscriptions)\n";
 
   constexpr int kMaxTurns = 5;
   for (int turn = 1; turn <= kMaxTurns; ++turn) {
