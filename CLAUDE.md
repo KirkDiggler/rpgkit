@@ -48,6 +48,25 @@ Settled in the design + plan. Implementers do not relitigate.
   threads open when asking Kirk to review.
 - **Never merge without Kirk's explicit approval.**
 
+### Tutorial session workflow
+
+Each tutorial follows this exact sequence:
+
+1. **Branch.** `gcm && gl && gcb feat/tutorial-NN-description` from fresh main.
+2. **Build.** Write code + docs per the design spec (`docs/journey/` or `docs/builds/tutorials/`).
+   Run `make pre-commit` until green. Push and open the PR.
+3. **Review.** Wait for Copilot review. Address every comment — fix the code or
+   reply with reasoning. Push fixes, re-request review if needed.
+4. **Merge.** Kirk approves → merge the PR.
+5. **Tag.** After merge, tag the release on main:
+   - Bump version in `CMakeLists.txt` and `core/include/rpg/core/version.hpp`.
+   - Commit: `chore: bump version to v0.X.Y`.
+   - Tag: `git tag -a v0.X.Y -m "v0.X.Y — Tutorial NN: description"`.
+   - Push: `git push origin main && git push origin v0.X.Y`.
+6. **Housekeep.** Update `docs/status.md`. Close stale issues. Advance the board.
+
+No skipping steps, no merging without review, no tagging before merge.
+
 ## Testing
 
 - GoogleTest via FetchContent; tests live in `<module>/tests/`.
