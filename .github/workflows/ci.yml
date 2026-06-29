@@ -55,9 +55,12 @@ jobs:
       - name: Lint
         run: make lint
 
-  # Auto-tags a release when the version in CMakeLists.txt changes and
-  # merges to main. Runs only on main pushes (not PRs), after build/test/lint
-  # pass. Consumers (rpgkit-ue) pin FetchContent to these tags.
+  # Auto-tags AND publishes a GitHub Release when the version in CMakeLists.txt
+  # changes and merges to main. Runs only on main pushes (not PRs), after
+  # build/test/lint pass — so every release is green-gated. The tag is derived
+  # from project(VERSION), so tag <-> version can't drift (no separate check
+  # needed). Consumers (rpgkit-ue) pin FetchContent to these tags / Releases.
+  # See issue #57.
   tag:
     name: tag release
     runs-on: ubuntu-latest
@@ -92,3 +95,32 @@ jobs:
         run: |
           git tag ${{ steps.version.outputs.tag }}
           git push origin ${{ steps.version.outputs.tag }}
+      # Gate the Release on the *Release* missing, not the tag, so the job
+      # self-heals: if the tag was cut but `gh release create` later failed
+      # (transient API error / rate limit), a subsequent run still publishes the
+      # missing Release instead of skipping it forever. A no-op push where the
+      # Release already exists is a clean skip, so we never re-release.
+      - name: Check if release exists
+        id: release_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      # Publish in the same green-gated job that cut the tag (job already needs
+      # build/test/lint). --verify-tag refuses to invent a tag if it isn't
+      # present. This lives in the tag job rather than a separate tag-triggered
+      # release.yml because a tag pushed with GITHUB_TOKEN can't trigger another
+      # workflow run (GitHub's anti-recursion rule).
+      - name: Publish GitHub Release
+        if: steps.release_check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.tag }}" \
+            --title "${{ steps.version.outputs.tag }}" \
+            --generate-notes \
+            --verify-tag
