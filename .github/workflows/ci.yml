@@ -95,14 +95,28 @@ jobs:
         run: |
           git tag ${{ steps.version.outputs.tag }}
           git push origin ${{ steps.version.outputs.tag }}
-      # Publish the Release in the same green-gated job that cut the tag. Only
-      # runs when we just created the tag (exists == 'false'), so a no-op main
-      # push never re-releases. --verify-tag refuses to invent a tag if the push
-      # above somehow didn't land. The GITHUB_TOKEN here can't trigger a further
-      # workflow run, which is exactly why this lives in the tag job rather than
-      # a separate tag-triggered release.yml.
+      # Gate the Release on the *Release* missing, not the tag, so the job
+      # self-heals: if the tag was cut but `gh release create` later failed
+      # (transient API error / rate limit), a subsequent run still publishes the
+      # missing Release instead of skipping it forever. A no-op push where the
+      # Release already exists is a clean skip, so we never re-release.
+      - name: Check if release exists
+        id: release_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      # Publish in the same green-gated job that cut the tag (job already needs
+      # build/test/lint). --verify-tag refuses to invent a tag if it isn't
+      # present. This lives in the tag job rather than a separate tag-triggered
+      # release.yml because a tag pushed with GITHUB_TOKEN can't trigger another
+      # workflow run (GitHub's anti-recursion rule).
       - name: Publish GitHub Release
-        if: steps.check.outputs.exists == 'false'
+        if: steps.release_check.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
